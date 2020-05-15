@@ -32,7 +32,7 @@ class Commander:
         # Create subnets
         for name in subnets:
             ip, mask = subnets[name].split('/')
-            inst.create_network(ip, mask, str(name))
+            inst.create_network(ip, int(mask), str(name))
 
         # Create routers
         for name in routers:

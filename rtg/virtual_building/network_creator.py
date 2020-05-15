@@ -1,6 +1,7 @@
-from NetworkUtilities.core.network_basic import NetworkBasic
-from NetworkUtilities.core.utils import Utils
-from NetworkUtilities.core.errors import IPOffNetworkRangeException
+from nettools.core.ipv4_network import IPv4Network
+from nettools.utils.ip_class import FourBytesLiteral
+from nettools.utils.utils import Utils
+from nettools.utils.errors import IPOffNetworkRangeException
 
 from rtg.core.errors import *
 
@@ -63,8 +64,7 @@ class NetworkCreator:
 
         def __init__(self, starting_ip, mask, uid, name=None):
 
-            inst_ = NetworkBasic(starting_ip, mask)
-            inst_.determine_network_range()
+            inst_ = IPv4Network().init_from_couple(starting_ip, mask)
 
             self.uid = uid
             self.name = name if name else None
@@ -160,11 +160,11 @@ class NetworkCreator:
     #
     # Creators
     #
-    def create_network(self, starting_ip, mask, name=None):
+    def create_network(self, ip, mask, name=None):
         """
         Function used to create a virtual network using Network class
 
-        :param starting_ip:
+        :param ip:
         :param mask:
         :param name: The possible name of the network
         TODO: given name created by program if no name given as param
@@ -179,23 +179,26 @@ class NetworkCreator:
 
         uid = len(self.subnetworks)
 
+        # convert ip literal to FBL
+        fbl_ip = FourBytesLiteral().set_from_string_literal(ip)
+
         if self.ranges:
             # we check for starting ip
             for range_ in self.ranges:
-                result = Utils.ip_in_range(range_, starting_ip)
+                result = Utils.ip_in_range(range_, ip)
                 if result:
-                    raise OverlappingError('start', range_, starting_ip, mask)
+                    raise OverlappingError('start', range_, ip, mask)
 
-            inst_ = self.Network(starting_ip, mask, uid, name)
+            inst_ = self.Network(ip, mask, uid, name)
             self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
 
             # then we check last ip of range to check nothing is overlapping
             for range_ in self.ranges:
                 result = Utils.ip_in_range(range_, inst_.network_range['end'])
                 if result:
-                    raise OverlappingError('end', range_, inst_.network_range)
+                    raise OverlappingError('end', range_, Utils.netr_to_literal(inst_.network_range))
         else:
-            inst_ = self.Network(starting_ip, mask, uid, name)
+            inst_ = self.Network(ip, mask, uid, name)
             self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
 
         # adding to network ranges
@@ -250,24 +253,25 @@ class NetworkCreator:
             :param ip_: the ip that has to be checked
             :raise:
                 NetworkUtilities.core.errors.IPOffNetworkRangeException
-                ou
+                or
                 rtg.core.errors.IPAlreadyAttributed
             """
 
             # Checking that ip is effectively in range of the subnet
-            starting_ip, mask = subnet_inst_.network_range['start'], subnet_inst_.mask_length
-            inst = NetworkBasic(starting_ip, mask=mask)
-            # it will raise an error if the ip is not in range
-            inst.determine_type(ip_)
+            if isinstance(ip_, str):
+                ip_ = FourBytesLiteral().set_from_string_literal(ip_)
+
+            mask = FourBytesLiteral().set_from_string_literal(Utils.mask_length_to_literal(subnet_inst_.mask_length))
+            inst = IPv4Network().init_from_fbl(ip_, mask)
 
             if inst.address_type != 1:
                 # means the address is either a network or a broadcast address
-                raise IPOffNetworkRangeException()
+                raise IPOffNetworkRangeException(str(ip))
 
             # then we check that ip is not used by any of the current routers
             routers = subnet_inst_.routers
             for r in routers:
-                if r['ip'] == ip_:
+                if str(r['ip']) == str(ip_):
                     raise IPAlreadyAttributed(name, ip_, self.uid_to_name('router', r['uid']), str(router_name))
 
         router_uid = self.name_to_uid('router', router_name)
@@ -283,7 +287,7 @@ class NetworkCreator:
             if subnet_ip:
                 check_ip_availability(subnet_inst, subnet_ip)
                 ip = subnet_ip
-            # we will let the program attribute it for us
+            # we will let the program set it for us
             else:
 
                 ip = subnet_inst.network_range['end']
@@ -292,7 +296,7 @@ class NetworkCreator:
                     try:
                         check_ip_availability(subnet_inst, ip)
                         break
-                    except (IPOffNetworkRangeException, IPAlreadyAttributed):
+                    except IPAlreadyAttributed:
                         continue
 
             subnet_inst.connect(router_uid, ip)
@@ -320,22 +324,36 @@ class NetworkCreator:
 
         for sid in self.subnetworks:
             subnet = self.subnetworks[sid]['instance']
+
+            displayable_connected_routers = subnet.routers.copy()
+            for i in range(len(displayable_connected_routers)):
+                displayable_connected_routers[i] = {
+                    'uid': displayable_connected_routers[i]['uid'],
+                    'ip': str(displayable_connected_routers[i]['ip'])
+                }
             
             final['subnets'][sid] = {
                 'id': subnet.uid,
                 'name': subnet.name,
-                'connected_routers': subnet.routers,
-                'range': subnet.network_range,
+                'connected_routers': displayable_connected_routers,
+                'range': Utils.netr_to_literal(subnet.network_range),
                 'mask': subnet.mask_length
             }
             
         for rid in self.routers:
             router = self.routers[rid]
+
+            displayable_connected_subnets = router.connected_networks.copy()
+            for i in range(len(displayable_connected_subnets)):
+                displayable_connected_subnets[i] = {
+                    'uid': displayable_connected_subnets[i]['uid'],
+                    'ip': str(displayable_connected_subnets[i]['ip'])
+                }
             
             final['routers'][rid] = {
                 'id': router.uid,
                 'name': router.name,
-                'connected_subnets': router.connected_networks,
+                'connected_subnets': displayable_connected_subnets,
                 'internet': router.internet
             }
 

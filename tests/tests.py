@@ -427,6 +427,9 @@ class MyTestCase(unittest.TestCase):
 
             for router in n['expected_result']:
                 res = result[str(router)]
+                for e in res:
+                    res[e] = str(res[e])
+
                 expected = n['expected_result'][router]
 
                 self.assertEqual(expected, res, f'{n["name"]} : Table : router {router}')

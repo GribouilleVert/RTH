@@ -71,10 +71,10 @@ def setup_package():
         long_description=md_desc,
         long_description_content_type="text/markdown",
 
-        url='https://github.com/BioTheWolff/NetworkUtilities',
+        url='https://github.com/BioTheWolff/RTG',
         project_urls={
-            'Source Code': 'https://github.com/BioTheWolff/NetworkUtilities',
-            'Bug Tracker': 'https://github.com/BioTheWolff/NetworkUtilities/issues',
+            'Source Code': 'https://github.com/BioTheWolff/RTG',
+            'Bug Tracker': 'https://github.com/BioTheWolff/RTG/issues',
         },
 
         author='Fabien Z.',
@@ -88,6 +88,9 @@ def setup_package():
             'rtg.adapters',
             'rtg.core',
             'rtg.virtual_building'
+        ],
+        install_requires=[
+            "nettools",
         ],
 
         classifiers=[
