@@ -1,7 +1,7 @@
 import argparse
 from .adapters.yml_adapter import YAMLAdapter
 from .adapters.json_adapter import JSONAdapter
-from RoutingTablesCalculator.core.errors import WrongFileFormat
+from rtg.core.errors import WrongFileFormat
 
 
 def main():

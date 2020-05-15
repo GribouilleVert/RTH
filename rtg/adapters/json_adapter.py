@@ -1,6 +1,6 @@
 import json
-from RoutingTablesCalculator.core.errors import MissingJSONTag, WrongJSONTag, MissingJSONInfo
-from RoutingTablesCalculator.virtual_building.network_creator import NetworkCreator
+from rtg.core.errors import MissingJSONTag, WrongJSONTag, MissingJSONInfo
+from rtg.virtual_building.network_creator import NetworkCreator
 
 
 class JSONAdapter:

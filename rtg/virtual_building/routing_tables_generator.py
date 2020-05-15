@@ -1,4 +1,4 @@
-from RoutingTablesCalculator.virtual_building.utils import *
+from rtg.virtual_building.utils import *
 
 
 class RoutingTablesGenerator:

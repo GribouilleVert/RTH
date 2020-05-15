@@ -1,6 +1,6 @@
 from ruamel.yaml import YAML
-from RoutingTablesCalculator.core.errors import MissingYAMLTag, WrongYAMLTag, MissingYAMLInfo
-from RoutingTablesCalculator.virtual_building.network_creator import NetworkCreator
+from rtg.core.errors import MissingYAMLTag, WrongYAMLTag, MissingYAMLInfo
+from rtg.virtual_building.network_creator import NetworkCreator
 
 
 class YAMLAdapter:

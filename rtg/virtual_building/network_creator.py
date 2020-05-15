@@ -2,7 +2,7 @@ from NetworkUtilities.core.network_basic import NetworkBasic
 from NetworkUtilities.core.utils import Utils
 from NetworkUtilities.core.errors import IPOffNetworkRangeException
 
-from RoutingTablesCalculator.core.errors import *
+from rtg.core.errors import *
 
 
 class NetworkCreator:
@@ -251,7 +251,7 @@ class NetworkCreator:
             :raise:
                 NetworkUtilities.core.errors.IPOffNetworkRangeException
                 ou
-                RoutingTablesCalculator.core.errors.IPAlreadyAttributed
+                rtg.core.errors.IPAlreadyAttributed
             """
 
             # Checking that ip is effectively in range of the subnet

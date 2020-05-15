@@ -1,6 +1,6 @@
-from RoutingTablesCalculator.virtual_building.network_creator import NetworkCreator
-from RoutingTablesCalculator.virtual_building.ants import AntsDiscovery
-from RoutingTablesCalculator.virtual_building.routing_tables_generator import RoutingTablesGenerator
+from rtg.virtual_building.network_creator import NetworkCreator
+from rtg.virtual_building.ants import AntsDiscovery
+from rtg.virtual_building.routing_tables_generator import RoutingTablesGenerator
 
 
 class Commander:

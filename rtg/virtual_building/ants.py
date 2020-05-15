@@ -1,6 +1,6 @@
 from enum import Enum
-from RoutingTablesCalculator.core.errors import NetworkUnreachable
-from RoutingTablesCalculator.virtual_building.utils import *
+from rtg.core.errors import NetworkUnreachable
+from rtg.virtual_building.utils import *
 
 
 class AntState(Enum):

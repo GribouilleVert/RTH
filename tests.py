@@ -216,7 +216,7 @@ class MyTestCase(unittest.TestCase):
                         "10.0.0.0/24": "192.168.0.253",
                         "10.0.1.0/24": "192.168.1.253",
                         "0.0.0.0/0": "192.168.1.253"
-                        },
+                    },
                     2: {
                         "192.168.0.0/24": "192.168.0.253",
                         "10.0.0.0/24": "10.0.0.254",
@@ -376,7 +376,7 @@ class MyTestCase(unittest.TestCase):
                 }
             }
         }
-        
+
         for nid in self.networks:
             net = self.networks[nid]
             inst = Commander()
