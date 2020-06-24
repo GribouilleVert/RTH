@@ -2,7 +2,7 @@ import unittest
 from rtg.core.dispatcher import Dispatcher
 
 
-class MyTestCase(unittest.TestCase):
+class ProcessTests(unittest.TestCase):
 
     def setUp(self) -> None:
 
@@ -413,6 +413,25 @@ class MyTestCase(unittest.TestCase):
                 self.assertEqual(expected, res, f'{n["name"]} : Ants : tuple {matrix}')
 
             print(f"Passed : {n['name']}")
+
+    def test_3_routing_tables(self):
+        print(f"\n\nConfiguration [table]")
+
+        for number in self.networks:
+
+            n = self.networks[number]
+            inst = n['instance']
+
+            # grab the result
+            result = inst.formatted_raw_routing_tables
+
+            for router in n['expected_result']:
+                res = result[str(router)]
+                expected = n['expected_result'][router]
+
+                self.assertEqual(expected, res, f'{n["name"]} : Table : router {router}')
+
+            print(f'Passed {n["name"]}')
 
 
 if __name__ == '__main__':

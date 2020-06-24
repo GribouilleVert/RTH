@@ -1,7 +1,7 @@
 from rtg.virtual_building.network_creator import NetworkCreator
 from rtg.virtual_building.ants import AntsDiscovery
 from rtg.virtual_building.routing_tables_generator import RoutingTablesGenerator
-from .errors import WronglyFormedSubnetworksData, WronglyFormedRoutersData, WronglyFormedLinksData
+from .errors import WronglyFormedSubnetworksData, WronglyFormedRoutersData, WronglyFormedLinksData, MissingDataParameter
 from nettools.utils.ip_class import FourBytesLiteral
 
 
@@ -84,8 +84,8 @@ class Dispatcher:
         self.subnetworks = subnetworks
         self.routers = routers
         self.links = links
-        self.equitemporality = equitemporality
 
+        self.equitemporality = equitemporality
         self.__flow()
 
     def __flow(self):
@@ -93,8 +93,6 @@ class Dispatcher:
         self.__build_virtual_network()
         self.__discover_hops()
         self.__calculate_routing_tables()
-
-        self.finished = True
 
     #
     # Perform all checks about data passed here
@@ -207,6 +205,12 @@ class Dispatcher:
             for i in range(len(self.routers)):
                 name = self.gend_routers_names[i]
                 final[name] = routing_tables[i]
+
+            # reformatting final table to print in strings the router IP instead of having a FBL instance
+            for router in final:
+                for key in final[router]:
+                    final[router][key] = str(final[router][key])
+
             self.formatted_raw_routing_tables = final
         else:
             for i in range(len(self.routers)):

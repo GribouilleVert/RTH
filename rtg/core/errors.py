@@ -17,6 +17,13 @@ class WronglyFormedLinksData(Exception):
         return "The link data given is wrongly formed or missing information. Please verify said data."
 
 
+class MissingDataParameter(Exception):
+
+    def __str__(self):
+        return "Missing one of the required data (subnetworks, routers or links) and could not find an " \
+               "already-existing network instance"
+
+
 # NetworkBasic-specific errors
 class OverlappingError(Exception):
 

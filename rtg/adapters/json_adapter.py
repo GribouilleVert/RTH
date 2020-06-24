@@ -1,5 +1,6 @@
 import json
 from rtg.core.errors import MissingJSONTag, WrongJSONTag, MissingJSONInfo
+from rtg.core.dispatcher import Dispatcher
 from rtg.virtual_building.network_creator import NetworkCreator
 
 
@@ -8,12 +9,14 @@ class JSONAdapter:
         self.file_path = file_path
 
     def __call__(self, *args, **kwargs):
+        self.evaluate()
+
+    def evaluate(self):
         with open(self.file_path, 'r') as file:
             decoded = json.load(file)
 
         found_networks, found_routers, found_links, links_or_connections = False, False, False, 'Links'
         for part in decoded:
-            print(part)
             if part == 'Networks':
                 found_networks = True
             elif part == 'Routers':
@@ -34,35 +37,37 @@ class JSONAdapter:
         # we init the instance
         inst = NetworkCreator()
 
-        # we register all subnets
+        # we create the dictionary of all subnetworks
+        subnetworks = {}
         for name in decoded['Networks']:
             net = decoded['Networks'][name]
 
             if "cidr" in net:
                 # we found a CIDR, so we split it and return the network
-                ip, mask = net['cidr'].split('/')
-                inst.create_network(ip, mask, str(name))
+                subnetworks[name] = net['cidr']
             elif "ip" in net and "mask" in net:
                 # we found an IP and a mask
                 ip, mask = net['ip'], net['mask']
-                inst.create_network(ip, mask, str(name))
+                subnetworks[name] = f"{ip}/{mask}"
             else:
                 # missing a cidr tag or a couple IP/mask
                 raise MissingJSONInfo('Networks', str(name), "CIDR or IP/mask couple")
 
-        # then we register all routers
+        # then we create the dictionary of all routers
+        routers = {}
         for name in decoded['Routers']:
             router = decoded['Routers'][name]
 
             if router and "internet" in router:
-                inst.create_router(name=str(name), internet_connection=True)
+                routers[name] = True
             else:
-                inst.create_router(name=str(name))
+                routers[name] = None
 
         # finally, we link all things between them
         list_ = decoded['Links'] if links_or_connections == 'Links' else decoded['Connections']
-        for link in list_:
-            subnets = list_[link]
-            inst.connect_router_to_networks(link, subnets)
 
-        return inst
+        # Now we pass the instance onto the dispatcher
+        dispatch = Dispatcher()
+        dispatch.execute(subnetworks=subnetworks, routers=routers, links=list_)
+
+        return dispatch
