@@ -24,7 +24,7 @@ def main():
         adapter = JSONAdapter(args.file)
 
     net_instance = adapter()
-    result = net_instance.calculate_routing_tables(raw=args.readable)
+    result = net_instance.__calculate_routing_tables(raw=args.readable)
     if args.readable is True:
         print(result)
 

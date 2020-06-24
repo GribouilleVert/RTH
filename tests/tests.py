@@ -1,5 +1,5 @@
 import unittest
-from rtg.core.commander import Commander
+from rtg.core.dispatcher import Dispatcher
 
 
 class MyTestCase(unittest.TestCase):
@@ -379,8 +379,8 @@ class MyTestCase(unittest.TestCase):
 
         for nid in self.networks:
             net = self.networks[nid]
-            inst = Commander()
-            inst.build_virtual_network(net['subnets'], net['routers'], net['links'])
+            inst = Dispatcher()
+            inst.execute(net['subnets'], net['routers'], net['links'])
             self.networks[nid]['instance'] = inst
 
     def test_1_network_check(self):
@@ -403,7 +403,7 @@ class MyTestCase(unittest.TestCase):
             n = self.networks[number]
             inst = n['instance']
 
-            hops = inst.discover_hops()
+            hops = inst.hops
 
             # testing hops
             for matrix in n['expected_hops']:
@@ -413,28 +413,6 @@ class MyTestCase(unittest.TestCase):
                 self.assertEqual(expected, res, f'{n["name"]} : Ants : tuple {matrix}')
 
             print(f"Passed : {n['name']}")
-
-    def test_3_by_raw_insertion(self):
-        print(f"\n\nConfiguration [table]")
-
-        for number in self.networks:
-
-            n = self.networks[number]
-            inst = n['instance']
-
-            # grab the result
-            result = inst.calculate_routing_tables(raw=True)
-
-            for router in n['expected_result']:
-                res = result[str(router)]
-                for e in res:
-                    res[e] = str(res[e])
-
-                expected = n['expected_result'][router]
-
-                self.assertEqual(expected, res, f'{n["name"]} : Table : router {router}')
-
-            print(f'Passed {n["name"]}')
 
 
 if __name__ == '__main__':

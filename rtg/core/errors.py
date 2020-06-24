@@ -1,3 +1,22 @@
+# Given data errors
+class WronglyFormedSubnetworksData(Exception):
+
+    def __str__(self):
+        return "The subnetworks data given is wrongly formed or missing information. Please verify said data."
+
+
+class WronglyFormedRoutersData(Exception):
+
+    def __str__(self):
+        return "The routers data given is wrongly formed or missing information. Please verify said data."
+
+
+class WronglyFormedLinksData(Exception):
+
+    def __str__(self):
+        return "The link data given is wrongly formed or missing information. Please verify said data."
+
+
 # NetworkBasic-specific errors
 class OverlappingError(Exception):
 
