@@ -2,5 +2,9 @@
 .vscode/
 __pycache__/
 
-htmlcov
+# Coverage
+htmlcov/
 .coverage
+
+# files to be reworked, to be added later or removed for a moment
+stock

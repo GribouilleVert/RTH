@@ -10,7 +10,7 @@ class NetworkCreator:
     """
     This class is the virtual environment which contains everything for the program to run.
 
-    This is the foundation where everything is.
+    This is the base everything is built on.
 
     The Network class is the virtual network existing in this environment.
     The Router class is the virtual router existing in this environment.
@@ -60,7 +60,7 @@ class NetworkCreator:
 
         network_range, addresses, mask_length = {}, 0, 0
         routers = None
-        uid, name = 0, None
+        uid, name = -1, None
 
         def __init__(self, starting_ip, mask, uid, name=None):
 
@@ -93,7 +93,7 @@ class NetworkCreator:
         :ivar connected_networks: The dict of the connected subnets. Format: [{'uid': net_uid, 'ip': router_ip}, ...]
         """
 
-        uid, name = 0, None
+        uid, name = -1, None
         connected_networks, internet = None, False
 
         def __init__(self, uid, internet=False, name=None, delay=None):
@@ -160,36 +160,34 @@ class NetworkCreator:
     #
     # Creators
     #
-    def create_network(self, ip, mask, name=None):
+    def create_network(self, ip, mask_length, name=None):
         """
         Function used to create a virtual network using Network class
 
         :param ip:
-        :param mask:
+        :param mask_length:
         :param name: The possible name of the network
-        TODO: given name created by program if no name given as param
         :return uid: the uid of the newly created network
         """
+
+        uid = len(self.subnetworks)
 
         # Name correspondency
         if name:
             result = self.is_name_existing('subnet', name)
             if result:
                 raise NameAlreadyExists(name)
-
-        uid = len(self.subnetworks)
-
-        # convert ip literal to FBL
-        fbl_ip = FourBytesLiteral().set_from_string_literal(ip)
+        else:
+            name = f"<Untitled Network#ID:{uid}>"
 
         if self.ranges:
             # we check for starting ip
             for range_ in self.ranges:
                 result = Utils.ip_in_range(range_, ip)
                 if result:
-                    raise OverlappingError('start', range_, ip, mask)
+                    raise OverlappingError('start', range_, ip, mask_length)
 
-            inst_ = self.Network(ip, mask, uid, name)
+            inst_ = self.Network(ip, mask_length, uid, name)
             self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
 
             # then we check last ip of range to check nothing is overlapping
@@ -198,7 +196,7 @@ class NetworkCreator:
                 if result:
                     raise OverlappingError('end', range_, Utils.netr_to_literal(inst_.network_range))
         else:
-            inst_ = self.Network(ip, mask, uid, name)
+            inst_ = self.Network(ip, mask_length, uid, name)
             self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
 
         # adding to network ranges
@@ -215,16 +213,18 @@ class NetworkCreator:
 
         :param internet_connection: boolean for whether the router is a connexion to the outer world (internet)
         :param name: The eventual name of the router
-        TODO: given name created by program if no name given as param
         :return uid: The uid of the newly created router
         """
+
+        uid = len(self.routers)
 
         if name:
             result = self.is_name_existing('router', name)
             if result:
                 raise NameAlreadyExists(name)
+        else:
+            name = f"<Untitled Router#ID:{uid}>"
 
-        uid = len(self.routers)
         inst_ = self.Router(uid, internet_connection, name)
 
         self.routers_names.append(name)
