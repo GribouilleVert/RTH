@@ -27,25 +27,12 @@ class MissingDataParameter(Exception):
 # NetworkBasic-specific errors
 class OverlappingError(Exception):
 
-    def __init__(self, type_, net_range, ip_or_range, mask=None):
-        self.type = type_
-        self.range = f"{net_range['start']} - {net_range['end']}"
-
-        if type_ == 'start':
-            self.ip = ip_or_range
-            self.mask = mask
-            if isinstance(mask, int):
-                self.mask_display = f"/{self.mask}"
-            else:
-                self.mask_display = f" (with mask {self.mask})"
-        elif type_ == 'end':
-            self.ip = f"{ip_or_range['start']} - {ip_or_range['end']}"
+    def __init__(self, new, existing):
+        self.new_range = f"{new['start']} - {new['end']}"
+        self.existing_range = f"{existing['start']} - {existing['end']}"
 
     def __str__(self):
-        if self.type == 'start':
-            return f"IP {self.ip}{self.mask_display} is overlapping range {self.range}"
-        elif self.type == 'end':
-            return f"Range {self.ip} is overlapping range {self.range}"
+        return f"Range {self.new_range} is overlapping range {self.existing_range}"
 
 
 class IPOffRangeError(Exception):

@@ -180,27 +180,49 @@ class NetworkCreator:
         else:
             name = f"<Untitled Network#ID:{uid}>"
 
+        current = self.Network(ip, mask_length, uid, name)
+        current_netr = Utils.netr_to_literal(current.network_range)
+
         if self.ranges:
-            # we check for starting ip
-            for range_ in self.ranges:
-                result = Utils.ip_in_range(range_, ip)
-                if result:
-                    raise OverlappingError('start', range_, ip, mask_length)
+            for sid in self.subnetworks:
+                subnet = self.subnetworks[sid]['instance']
+                subnetr = Utils.netr_to_literal(subnet.network_range)
 
-            inst_ = self.Network(ip, mask_length, uid, name)
-            self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
+                overlap = False
+                if current.mask_length == subnet.mask_length:
+                    # Masks are equal
+                    if current_netr['start'] == subnetr['start']:
+                        overlap = True
+                else:
+                    if current.mask_length < subnet.mask_length:
+                        # New network mask is bigger, check if the existing subnetwork is inside
+                        big = current_netr['start'].split('.')
+                        small = subnetr['start']
+                    else:
+                        # New network is smaller that existing subnetwork, check if it is inside
+                        small = current_netr['start']
+                        big = subnetr['start'].split('.')
 
-            # then we check last ip of range to check nothing is overlapping
-            for range_ in self.ranges:
-                result = Utils.ip_in_range(range_, inst_.network_range['end'])
-                if result:
-                    raise OverlappingError('end', range_, Utils.netr_to_literal(inst_.network_range))
-        else:
-            inst_ = self.Network(ip, mask_length, uid, name)
-            self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
+                    if current.mask_length <= 8:
+                        if small.startswith(big[0]):
+                            overlap = True
+                    elif 8 < current.mask_length <= 16:
+                        if small.startswith(f"{big[0]}.{big[1]}"):
+                            overlap = True
+                    elif 16 < current.mask_length <= 24:
+                        if small.startswith(f"{big[0]}.{big[1]}.{big[2]}"):
+                            overlap = True
+                    elif 24 < current.mask_length <= 32:
+                        if small.split('.')[-1] > big[-1]:
+                            overlap = True
+
+                if overlap:
+                    raise OverlappingError(current_netr, subnetr)
+
+        self.subnetworks[uid] = {'instance': current, 'range': current.network_range}
 
         # adding to network ranges
-        self.ranges.append(inst_.network_range)
+        self.ranges.append(current.network_range)
         # also adding name if defined
         if name:
             self.subnets_names.append(name)
