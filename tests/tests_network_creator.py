@@ -86,6 +86,9 @@ class NetworkCreatorTests(unittest.TestCase):
         # final check to see both names have been registered
         self.assertEqual(['My network', 'My second network'], i.subnets_names, msg="Global network names list")
 
+        self.assertEqual(1, i.name_to_uid('subnet', "My second network"))
+        self.assertEqual("My network", i.uid_to_name('subnet', 0))
+
     def test_name_routers(self):
         i = NetworkCreator()
 
@@ -102,18 +105,23 @@ class NetworkCreatorTests(unittest.TestCase):
         # final check of the global router names list
         self.assertEqual(['My router', 'My second router'], i.routers_names, msg="Global router names list")
 
+        self.assertEqual(1, i.name_to_uid('router', "My second router"))
+        self.assertEqual("My router", i.uid_to_name('router', 0))
+
     #
     # Make it crash!
     #
     def test_network_overlap(self):
         i = NetworkCreator()
-        i.create_network('192.168.1.0', 24)
+        i.create_network('10.5.1.0', 24)
 
         # Same CIDR
-        self.assertRaises(OverlappingError, lambda: i.create_network('192.168.1.0', 24))
+        self.assertRaises(OverlappingError, lambda: i.create_network('10.5.1.0', 24))
 
         # Smaller mask
-        self.assertRaises(OverlappingError, lambda: i.create_network('192.168.1.128', 28))
+        self.assertRaises(OverlappingError, lambda: i.create_network('10.5.1.128', 28))
 
         # Bigger mask
-        self.assertRaises(OverlappingError, lambda: i.create_network('192.168.0.0', 16))
+        self.assertRaises(OverlappingError, lambda: i.create_network('10.0.0.0', 8))
+        self.assertRaises(OverlappingError, lambda: i.create_network('10.5.0.0', 16))
+        self.assertRaises(OverlappingError, lambda: i.create_network('10.5.1.0', 19))

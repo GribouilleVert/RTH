@@ -204,16 +204,16 @@ class NetworkCreator:
                         big = subnetr['start'].split('.')
 
                     if current.mask_length <= 8:
-                        if small.startswith(big[0]):
+                        if int(big[0]) <= int(small.split('.')[0]):
                             overlap = True
                     elif 8 < current.mask_length <= 16:
-                        if small.startswith(f"{big[0]}.{big[1]}"):
+                        if small.startswith(f"{big[0]}") and int(big[1]) <= int(small.split('.')[1]):
                             overlap = True
                     elif 16 < current.mask_length <= 24:
-                        if small.startswith(f"{big[0]}.{big[1]}.{big[2]}"):
+                        if small.startswith(f"{big[0]}.{big[1]}") and int(big[2]) <= int(small.split('.')[2]):
                             overlap = True
                     elif 24 < current.mask_length <= 32:
-                        if small.split('.')[-1] > big[-1]:
+                        if int(big[3]) <= int(small.split('.')[3]):
                             overlap = True
 
                 if overlap:
