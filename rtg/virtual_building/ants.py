@@ -71,9 +71,13 @@ class Ant:
     def get_history(self):
         return self._history
 
-    def feed_history(self, hist):
-        self._history["routers"][0:0] = hist["routers"]
-        self._history["subnets"][0:0] = hist["subnets"]
+    def feed_history(self, type_at, hist):
+        if type_at == "routers":
+            self._history["routers"][0:0] = hist["routers"][:-1]
+            self._history["subnets"][0:0] = hist["subnets"]
+        elif type_at == "subnets":
+            self._history["routers"][0:0] = hist["routers"]
+            self._history["subnets"][0:0] = hist["subnets"][:-1]
 
     def next_hop_type(self):
         sub = self._history['subnets']
@@ -339,7 +343,7 @@ class AntsDiscovery:
                                 new_ant = FindAnt(AntState.Waiting, {"router": ant.router, "subnet": subnet_},
                                                   subnet_end)
 
-                            new_ant.feed_history(ant.get_history())
+                            new_ant.feed_history("routers", ant.get_history())
                             visit('subnets', subnet_)
 
                             if debug:
@@ -412,7 +416,7 @@ class AntsDiscovery:
                                 new_ant = SweepAnt(AntState.Alive, {"router": router, "subnet": ant.subnet})
                             else:
                                 new_ant = FindAnt(AntState.Alive, {"router": router, "subnet": ant.subnet}, subnet_end)
-                            new_ant.feed_history(ant.get_history())
+                            new_ant.feed_history("subnets", ant.get_history())
 
                             visit('routers', router)
                             if debug:
