@@ -1,5 +1,5 @@
 from enum import Enum
-from rtg.core.errors import NetworkUnreachable
+from rtg.core.errors import UnreachableNetwork
 from rtg.virtual_building.utils import *
 
 
@@ -332,7 +332,7 @@ class AntsDiscovery:
             if subnet not in result['subnets']:
                 inst = self.subnets[subnet]['instance']
                 total = len(self.subnets) - len(result['subnets'])
-                raise NetworkUnreachable(inst.name, inst.cidr, total)
+                raise UnreachableNetwork(inst.name, inst.cidr, total)
 
     def calculate_hops(self):
         """
