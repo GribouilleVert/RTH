@@ -125,3 +125,7 @@ class NetworkCreatorTests(unittest.TestCase):
         self.assertRaises(OverlappingError, lambda: i.create_network('10.0.0.0', 8))
         self.assertRaises(OverlappingError, lambda: i.create_network('10.5.0.0', 16))
         self.assertRaises(OverlappingError, lambda: i.create_network('10.5.1.0', 19))
+
+
+if __name__ == '__main__':
+    unittest.main()

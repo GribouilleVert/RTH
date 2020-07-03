@@ -1,6 +1,6 @@
 import argparse
 from stock.yml_adapter import YAMLAdapter
-from .adapters.json_adapter import JSONAdapter
+from stock.adapters import JSONAdapter
 from rtg.core.errors import WrongFileFormat
 
 

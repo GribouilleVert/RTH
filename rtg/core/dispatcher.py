@@ -74,8 +74,9 @@ class Dispatcher:
     #
     # DUNDERS
     #
-    def __init__(self):
+    def __init__(self, debug=False):
         self.__virtual_network_instance = NetworkCreator()
+        self.debug = debug
 
     #
     # Class execution flow
@@ -162,7 +163,7 @@ class Dispatcher:
     #
     def __discover_hops(self):
 
-        ants_inst = AntsDiscovery(self.gend_subnetworks, self.gend_routers, self.equitemporality)
+        ants_inst = AntsDiscovery(self.gend_subnetworks, self.gend_routers, self.equitemporality, debug=self.debug)
 
         ants_inst.sweep_network()
         ants_inst.calculate_hops()

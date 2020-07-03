@@ -60,3 +60,7 @@ class NetworkCreatorTests(unittest.TestCase):
         e = UnreachableNetwork("Random name again", "192.168.1.0/24", 3)
         self.assertEqual("The subnetwork 'Random name again' (CIDR 192.168.1.0/24) is unreachable from master router. "
                          "Total unreachable: 3", e.__str__())
+
+
+if __name__ == '__main__':
+    unittest.main()

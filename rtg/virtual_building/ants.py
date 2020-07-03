@@ -6,6 +6,7 @@ from rtg.virtual_building.utils import *
 class AntState(Enum):
     Alive = 0
     Dead = 1
+    Waiting = 2
 
 
 class Ant:
@@ -16,7 +17,7 @@ class Ant:
 
     Below,
         - Iteration is the move to the next router or subnet,
-        - Explored is the fact a router or network has already been explored by any of the alive ants.
+        - Explored is the fact a router or network has already been "visited" by an ant.
         - Possibility is an existing subnet or router that has already been explored or not.
     There are three cases each Iteration:
         - One Possibility, not Explored: the ant moves to the possibility and explores it, storing data into its history
@@ -44,8 +45,23 @@ class Ant:
     def dead(self):
         return self.__state == AntState.Dead
 
+    @property
+    def alive(self):
+        return self.__state == AntState.Alive
+
+    @property
+    def waiting(self):
+        return self.__state == AntState.Waiting
+
+    @property
+    def state(self):
+        return self.__state
+
     def kill(self):
         self.__state = AntState.Dead
+
+    def activate(self):
+        self.__state = AntState.Alive
 
     def move_to(self, pos):
         hop_type = self.next_hop_type()
@@ -98,6 +114,9 @@ class FindAnt(Ant):
         super().__init__(state, pos)
         self.__objective = objective
 
+    def already_on_objective(self):
+        return self.subnet == self.__objective
+
     def check_next_move(self, next_):
         hop_type = self.next_hop_type()
 
@@ -116,7 +135,7 @@ class AntsDiscovery:
     #
     # DUNDERS
     #
-    def __init__(self, subnets, routers, equitemporality=True):
+    def __init__(self, subnets, routers, equitemporality=True, debug=False):
         # given basics
         self.subnets = subnets
         self.routers = routers
@@ -125,6 +144,7 @@ class AntsDiscovery:
         self.hops = {}
         self.links, self.subnets_table = self.prepare_matrix_and_links()
         self.master_router = get_master_router(self.routers)
+        self.debug = debug
 
     #
     # Executers
@@ -170,7 +190,7 @@ class AntsDiscovery:
         return links, matrix
 
     @staticmethod
-    def ants_discovery_process(discovery_type, links, subnet_start, subnet_end=None):
+    def ants_discovery_process(discovery_type, links, subnet_start, subnet_end=None, debug=False):
         """
         This function is the core of the ants process.
         The labels in comments in the code below all refer to this section:
@@ -192,6 +212,7 @@ class AntsDiscovery:
         :param links: the links
         :param subnet_start: the subnet where the discovery will start
         :param subnet_end: the objective subnet we need to find
+        :param debug: If set to true, prints things in the console to help in debugging
         :return: visited, ants_at_objective : one is to ignore, the 2nd for sweep and the 1st for find
         """
 
@@ -210,6 +231,14 @@ class AntsDiscovery:
             list_ = routers if type_ == 'subnets' else subnets
             return list_[where]
 
+        def activate_ants():
+            k = 0
+            for ant_ in ants:
+                if ant_.waiting:
+                    k += 1
+                    ant_.activate()
+            return k
+
         # INIT
         for r in type_at_pos('routers', subnet_start):
             if discovery_type == 'sweep':
@@ -221,15 +250,48 @@ class AntsDiscovery:
 
         visit('subnets', subnet_start)
 
+        if debug:
+            print("----- PROCESS START -----")
+
         # PROCESS
         while len(ants):
 
+            if debug:
+                print(f"┌────────────────────────────────────────────")
+                print(f"│ Starting new round: {len(ants)} ants alive")
+                print(f"│ Current visited state: ", visited)
+
+            # Avoid recursion error
+            if len(ants) > 100:
+                raise RecursionError("Too many ants (>100). Aborting to avoid further problems.")
+
             # 1. Hop to next subnets
+            if debug:
+                print(f"├──────────────────────────────────────────")
+                print(f"│ Commencing hop to next subnetwork. Activated {activate_ants()} ants "
+                      f"({len(ants)} ants in total).")
+                print(f"│ Current router pos / history:")
+                for ant in ants:
+                    print(f"│  - {id(ant)}: {ant.router} / {ant.get_history()}")
+                print(f"│ Status:")
+            else:
+                activate_ants()
+
             for ant in ants:
+                if not ant.alive:
+                    continue
+
                 subnets_at_pos = [s_ for s_ in routers[ant.router] if not_visited('subnets', s_)]
 
+                if debug:
+                    print(f"│  └ {id(ant)}: {subnets_at_pos}")
+
                 # 1.1: One subnet
-                if len(subnets_at_pos) == 1:
+                if len(subnets_at_pos) == 0:
+                    ant.kill()
+                    if debug:
+                        print(f"│    » DEAD | Already seen everything from this node")
+                elif len(subnets_at_pos) == 1:
                     check = ant.check_next_move(subnets_at_pos[0])
 
                     if discovery_type == 'sweep':
@@ -238,9 +300,13 @@ class AntsDiscovery:
                             # We can proceed to next subnet
                             ant.move_to(subnets_at_pos[0])
                             visit('subnets', subnets_at_pos[0])
+                            if debug:
+                                print(f"│    » ALIVE | Discovered network {subnets_at_pos[0]}")
                         elif check is False:
                             # we already went there
                             ant.kill()
+                            if debug:
+                                print(f"│    » DEAD | Found a dead end")
                         else:
                             raise Exception("Unexpected to happen at anytime")
                     else:
@@ -262,27 +328,67 @@ class AntsDiscovery:
                 # 1.2: Several subnets, kills and births
                 else:
                     ant.kill()
+                    if debug:
+                        print(f"│    » DEAD | Found multiple possible paths. Giving birth to:")
+
                     for subnet_ in subnets_at_pos:
-                        if discovery_type == 'sweep':
-                            new_ant = SweepAnt(AntState.Alive, {"router": ant.router, "subnet": subnet_})
-                        else:
-                            new_ant = FindAnt(AntState.Alive, {"router": ant.router, "subnet": subnet_}, subnet_end)
-                        new_ant.feed_history(ant.get_history())
-                        ants.append(new_ant)
+                        if not_visited('subnets', subnet_):
+                            if discovery_type == 'sweep':
+                                new_ant = SweepAnt(AntState.Waiting, {"router": ant.router, "subnet": subnet_})
+                            else:
+                                new_ant = FindAnt(AntState.Waiting, {"router": ant.router, "subnet": subnet_},
+                                                  subnet_end)
+
+                            new_ant.feed_history(ant.get_history())
+                            visit('subnets', subnet_)
+
+                            if debug:
+                                print(f"│      » {id(new_ant)} : discovered {subnet_}")
+
+                            if isinstance(new_ant, FindAnt) and new_ant.already_on_objective():
+                                ants_at_objective.append(new_ant.get_history()['routers'])
+                                new_ant.kill()
+
+                            ants.append(new_ant)
 
             # 2. Hop to next routers
+            if debug:
+                print(f"├──────────────────────────────────────────")
+                print(f"│ Commencing hop to next router. Activated {activate_ants()} ants ({len(ants)} ants in total).")
+                print(f"│ Current subnetwork pos / history:")
+                for ant in ants:
+                    print(f"│  - {id(ant)}: {ant.subnet} / {ant.get_history()}")
+                print(f"│ Status:")
+            else:
+                activate_ants()
+
             for ant in ants:
+                if not ant.alive:
+                    continue
+
                 routers_at_pos = [r for r in subnets[ant.subnet] if not_visited('routers', r)]
 
+                if debug:
+                    print(f"│  └ {id(ant)}: {routers_at_pos}")
+
                 # 2.1: One router
-                if len(routers_at_pos) == 1:
+                if len(routers_at_pos) == 0:
+                    ant.kill()
+                    if debug:
+                        print(f"│    » DEAD | Already seen everything from this node")
+                elif len(routers_at_pos) == 1:
                     check = ant.check_next_move(routers_at_pos[0])
                     if discovery_type == 'sweep':
                         if check is True:
                             ant.move_to(routers_at_pos[0])
                             visit('routers', routers_at_pos[0])
+
+                            if debug:
+                                print(f"│    » ALIVE | Discovered router {routers_at_pos[0]}")
                         elif check is False:
                             ant.kill()
+                            if debug:
+                                print(f"│    » DEAD | Found a dead end")
                         else:
                             raise Exception("Unexpected to happen at anytime")
                     else:
@@ -297,20 +403,42 @@ class AntsDiscovery:
                 # 2.2: Several routers, kills and births
                 else:
                     ant.kill()
+
+                    if debug:
+                        print(f"│    » DEAD | Found multiple possible paths. Giving birth to:")
                     for router in routers_at_pos:
-                        if discovery_type == 'sweep':
-                            new_ant = SweepAnt(AntState.Alive, {"router": router, "subnet": ant.subnet})
-                        else:
-                            new_ant = FindAnt(AntState.Alive, {"router": router, "subnet": ant.subnet}, subnet_end)
-                        new_ant.feed_history(ant.get_history())
-                        ants.append(new_ant)
+                        if not_visited('routers', router):
+                            if discovery_type == 'sweep':
+                                new_ant = SweepAnt(AntState.Alive, {"router": router, "subnet": ant.subnet})
+                            else:
+                                new_ant = FindAnt(AntState.Alive, {"router": router, "subnet": ant.subnet}, subnet_end)
+                            new_ant.feed_history(ant.get_history())
+
+                            visit('routers', router)
+                            if debug:
+                                print(f"│      » {id(new_ant)} : discovered {router}")
+
+                            ants.append(new_ant)
 
             # 3. Cleaning up dead bodies
-            for ant in ants:
-                if ant.dead:
-                    ants.remove(ant)
+            if debug:
+                print(f"├──────────────────────────────────────────")
+                print(f"│ Removing dead ants. Total ants: {len(ants)}")
+
+            for i in reversed(range(len(ants))):
+                if debug:
+                    print(f"│   » {id(ants[i])}: {ants[i].state}")
+                if ants[i].dead:
+                    ants.remove(ants[i])
+
+            if debug:
+                print(f"│ Ants remaining : {len(ants)}")
+                print(f"└──────────────────────────────────────────")
 
         # RESULT
+        if debug:
+            print("----- PROCESS END -----")
+
         return visited, ants_at_objective
 
     #
@@ -326,7 +454,7 @@ class AntsDiscovery:
         master = self.master_router
         subnet_start = self.routers[master].connected_networks[0]['uid']
 
-        result, _ = self.ants_discovery_process('sweep', self.links, subnet_start)
+        result, _ = self.ants_discovery_process('sweep', self.links, subnet_start, debug=self.debug)
 
         for subnet in self.subnets:
             if subnet not in result['subnets']:
@@ -356,3 +484,5 @@ class AntsDiscovery:
                     self.hops[(s, e)] = smaller_of_list(at_objective)
             else:
                 self.hops[(s, e)] = at_objective
+
+        print(self.hops)
