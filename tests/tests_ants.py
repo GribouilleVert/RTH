@@ -1,6 +1,7 @@
 import unittest
 from rtg.core.dispatcher import Dispatcher
 from rtg.core.errors import UnreachableNetwork
+import unittest.mock as m
 
 
 class MyTestCase(unittest.TestCase):
@@ -55,7 +56,7 @@ class MyTestCase(unittest.TestCase):
 
                 }
             },
-            # Crashes because one network is unreachable
+            # Expected to crash because one network is unreachable
             "unreachable": {
                 'subnets': {
                     'A': "10.0.0.0/24",
@@ -99,7 +100,8 @@ class MyTestCase(unittest.TestCase):
 
                 }
             },
-            "multiple_choices": {
+            # When ants encounter two network possibilities
+            "multiple_choices_networks": {
                 'subnets': {
                     'A': "10.0.1.0/24",
                     'B': "10.0.2.0/24",
@@ -125,30 +127,133 @@ class MyTestCase(unittest.TestCase):
                     (2, 0): [1],
                     (2, 1): [1]
                 }
+            },
+            # When ants encounter two router possibilites
+            "multiple_choices_routers": {
+                'subnets': {
+                    'A': "10.0.1.0/24",
+                    'B': "10.0.2.0/24",
+                    'C': "10.0.3.0/24"
+                },
+                'routers': {
+                    1: True,
+                    2: None,
+                    3: None
+                },
+                'links': {
+                    1: {"A": None},
+                    2: {
+                        "A": None,
+                        "B": None
+                    },
+                    3: {
+                        "A": None,
+                        "C": None
+                    }
+                },
+                'expected_hops': {
+                    (0, 1): [1],
+                    (0, 2): [2],
+                    (1, 0): [1],
+                    (1, 2): [1, 2],
+                    (2, 0): [2],
+                    (2, 1): [2, 1]
+                }
+            },
+            # Now we test the ability of the ants to evaluate the fastest route of hops
+            "multiple_paths": {
+                'subnets': {
+                    'A': "10.0.1.0/24",
+                    'B': "10.0.2.0/24",
+                    'C': "10.0.3.0/24"
+                },
+                'routers': {
+                    0: True,
+                    1: None,
+                    2: None,
+                    3: None
+                },
+                'links': {
+                    0: {"A": None},
+                    1: {
+                        "A": None,
+                        "C": None
+                    },
+                    2: {
+                        "A": None,
+                        "B": None
+                    },
+                    3: {
+                        "B": None,
+                        "C": None
+                    }
+                },
+                'expected_hops': {
+                    (0, 1): [2],
+                    (0, 2): [1],
+                    (1, 0): [2],
+                    (1, 2): [3],
+                    (2, 0): [1],
+                    (2, 1): [3]
+                }
             }
         }
 
+    def prepare_run(self, dict_entry, debug=False):
+
+        test = self.networks[dict_entry]
+        inst = Dispatcher(debug=debug)
+        inst.execute(test['subnets'], test['routers'], test['links'])
+
+        return test["expected_hops"], inst.hops
+
+    #
+    # Basic test
+    #
     def test_basic_hops(self):
 
-        test = self.networks["basic"]
-        inst = Dispatcher(debug=True)
-        inst.execute(test['subnets'], test['routers'], test['links'])
+        e, a = self.prepare_run("basic")
+        self.assertEqual(e, a)
 
-        self.assertEqual(test['expected_hops'], inst.hops)
-
+    #
+    # Unreachable upon sweep
+    #
     def test_crash_unreachable_network(self):
 
-        test = self.networks["unreachable"]
-        inst = Dispatcher()
+        self.assertRaises(UnreachableNetwork, lambda: self.prepare_run("unreachable"))
 
-        self.assertRaises(UnreachableNetwork, lambda: inst.execute(test['subnets'], test['routers'], test['links']))
+    #
+    # Multiple choices to explore
+    #
+    def test_multiple_networks_to_explore(self):
 
-    def test_multiple_to_explore(self):
+        e, a = self.prepare_run("multiple_choices_networks")
+        self.assertEqual(e, a)
 
-        test = self.networks["multiple_choices"]
+    def test_multiple_routers_to_explore(self):
+
+        e, a = self.prepare_run("multiple_choices_routers")
+        self.assertEqual(e, a)
+
+    def test_multiple_paths(self):
+
+        e, a = self.prepare_run("multiple_paths")
+        self.assertEqual(e, a)
+
+    @m.patch("builtins.print")
+    def test_multiple_to_explore_mocked_debug(self, _):
+
+        # Those printed lines are supposed to be debug things, so we don't try and test them for it shouldn't be enabled
+        # in production.
+
+        test = self.networks["multiple_choices_networks"]
         inst = Dispatcher(debug=True)
         inst.execute(test['subnets'], test['routers'], test['links'])
+        self.assertEqual(test["expected_hops"], inst.hops)
 
+        test = self.networks["multiple_choices_routers"]
+        inst = Dispatcher(debug=True)
+        inst.execute(test['subnets'], test['routers'], test['links'])
         self.assertEqual(test["expected_hops"], inst.hops)
 
 

@@ -6,6 +6,8 @@ class ProcessTests(unittest.TestCase):
 
     def setUp(self) -> None:
 
+        self.debug_print = False
+
         self.networks = {
             # Basic network configuration
             1: {
@@ -286,7 +288,8 @@ class ProcessTests(unittest.TestCase):
             self.networks[nid]['instance'] = inst
 
     def test_1_network_check(self):
-        print(f"Configuration [network]")
+        if self.debug_print:
+            print(f"Configuration [network]")
 
         for number in self.networks:
             n = self.networks[number]
@@ -296,10 +299,12 @@ class ProcessTests(unittest.TestCase):
 
             # testing hops
             self.assertEqual(n['expected_network'], result, f'{n["name"]} : Network')
-            print(f'Passed : {n["name"]}')
+            if self.debug_print:
+                print(f'Passed : {n["name"]}')
 
     def test_2_hops(self):
-        print(f"\n\nConfiguration [hops]")
+        if self.debug_print:
+            print(f"\n\nConfiguration [hops]")
 
         for number in self.networks:
             n = self.networks[number]
@@ -314,10 +319,12 @@ class ProcessTests(unittest.TestCase):
 
                 self.assertEqual(expected, res, f'{n["name"]} : Ants : tuple {matrix}')
 
-            print(f"Passed : {n['name']}")
+            if self.debug_print:
+                print(f"Passed : {n['name']}")
 
     def test_3_routing_tables(self):
-        print(f"\n\nConfiguration [table]")
+        if self.debug_print:
+            print(f"\n\nConfiguration [table]")
 
         for number in self.networks:
 
@@ -333,7 +340,8 @@ class ProcessTests(unittest.TestCase):
 
                 self.assertEqual(expected, res, f'{n["name"]} : Table : router {router}')
 
-            print(f'Passed {n["name"]}')
+            if self.debug_print:
+                print(f'Passed {n["name"]}')
 
 
 if __name__ == '__main__':

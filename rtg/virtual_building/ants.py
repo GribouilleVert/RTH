@@ -413,9 +413,9 @@ class AntsDiscovery:
                     for router in routers_at_pos:
                         if not_visited('routers', router):
                             if discovery_type == 'sweep':
-                                new_ant = SweepAnt(AntState.Alive, {"router": router, "subnet": ant.subnet})
+                                new_ant = SweepAnt(AntState.Waiting, {"router": router, "subnet": ant.subnet})
                             else:
-                                new_ant = FindAnt(AntState.Alive, {"router": router, "subnet": ant.subnet}, subnet_end)
+                                new_ant = FindAnt(AntState.Waiting, {"router": router, "subnet": ant.subnet}, subnet_end)
                             new_ant.feed_history("subnets", ant.get_history())
 
                             visit('routers', router)
@@ -441,6 +441,7 @@ class AntsDiscovery:
 
         # RESULT
         if debug:
+            print("Final state: ", visited)
             print("----- PROCESS END -----")
 
         return visited, ants_at_objective
@@ -476,7 +477,10 @@ class AntsDiscovery:
             matrix = self.subnets_table[i]
             s, e = matrix
 
-            _, at_objective = self.ants_discovery_process('find', self.links, s, e)
+            _, at_objective = self.ants_discovery_process('find', self.links, s, e, debug=self.debug)
+
+            if self.debug:
+                print(f"matrix {matrix}: ", at_objective)
 
             # If equitemporality is set to False, we take all the paths to calculate later
             if self.equitemporality:
@@ -488,5 +492,3 @@ class AntsDiscovery:
                     self.hops[(s, e)] = smaller_of_list(at_objective)
             else:
                 self.hops[(s, e)] = at_objective
-
-        print(self.hops)
