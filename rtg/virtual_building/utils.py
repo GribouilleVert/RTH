@@ -1,3 +1,5 @@
+from rtg.core.errors import MasterRouterError
+
 def get_master_router(routers):
     """
         Get master route from all the routers
@@ -15,9 +17,9 @@ def get_master_router(routers):
     # then we check if there is no master or more than one master
     if not masters:
         # no master router
-        raise Exception("No router connected to internet")
+        raise MasterRouterError(True)
     elif len(masters) > 1:
-        raise Exception("There is more than one internet connection in the network")
+        raise MasterRouterError(False)
     else:
         return masters[0]
 

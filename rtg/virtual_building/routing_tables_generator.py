@@ -16,34 +16,38 @@ class RoutingTablesGenerator:
         self.master_router = get_master_router(self.routers)
 
     #
-    # Checkers
-    #
-    @staticmethod
-    def not_in_subnets_done(subnets_done, uid):
-        return uid not in subnets_done
-
-    #
     # Getters
     #
     @staticmethod
     def router_ip(instance_, provided):
-        for I in range(len(instance_.routers)):
-            if instance_.routers[I]['uid'] == provided:
-                return instance_.routers[I]['ip']
+        for k in range(len(instance_.routers)):
+            if instance_.routers[k]['uid'] == provided:
+                return instance_.routers[k]['ip']
         return False
 
     #
     # Executers
     #
     def build_paths_from_possibilites(self, routers_infos, outer_list, inner_list, return_as_dict=False):
+        """
+
+        Args:
+            routers_infos: A list with the master router ID in 0 and the current router in 1
+            outer_list: The subnetwork(s) to reach from the current router
+            inner_list: The subnetwork(s) connected to the current router
+            return_as_dict: (boolean) if the results are returned as a dict or only the
+                first subnetwork of the smaller path is returned
+
+        Returns:
+
+        """
         paths_ = {} if return_as_dict else []
 
         for end in outer_list:
             inner_paths = []
             for start in inner_list:
                 # we get the previously generated hop
-                check = (start != end)
-                if check:
+                if start != end:
                     inner_paths.append(self.hops[(start, end)])
                 else:
                     inner_paths.append([start])
@@ -85,19 +89,25 @@ class RoutingTablesGenerator:
             subnets_done.append(subnet)
 
         # getting master route
+
+        # the subnetwork attached to the master router
         master_attached = self.links['routers'][self.master_router]
 
+        # the subnetwork that leads to the master router
         to_master_uid = self.build_paths_from_possibilites([self.master_router, router_id],
                                                            master_attached, subnets_attached)
 
+        # now retrieving the IP of this router that points to the subnetwork leading to the master router
         to_master_ip = self.try_router_connected_to_subnet(subnets_attached, to_master_uid)
+
         if not to_master_ip:
-            raise Exception("To-master router should have been found in at least one of the subnets")
+            raise Exception("To-master router should have been found in at least one of the subnetworks")
+
         routing_table['0.0.0.0/0'] = to_master_ip
 
         # now we get each non-registered-yet subnet left
         subnets_left = [i for i in self.subnets
-                        if self.not_in_subnets_done(subnets_done, self.subnets[i]['instance'].uid)]
+                        if self.subnets[i]['instance'].uid not in subnets_done]
         paths = self.build_paths_from_possibilites([self.master_router, router_id], subnets_left,
                                                    subnets_attached, return_as_dict=True)
 
@@ -105,7 +115,7 @@ class RoutingTablesGenerator:
             router = paths[subnet][0]
             ip = self.try_router_connected_to_subnet(subnets_attached, router)
             if not ip:
-                raise Exception(f"Router id {router} should have been found in at least one of the subnets")
+                raise Exception(f"Router id {router} should have been found in at least one of the subnetworks")
             routing_table[self.subnets[subnet]['instance'].cidr] = ip
 
         return routing_table

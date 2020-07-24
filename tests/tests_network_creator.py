@@ -126,6 +126,24 @@ class NetworkCreatorTests(unittest.TestCase):
         self.assertRaises(OverlappingError, lambda: i.create_network('10.5.0.0', 16))
         self.assertRaises(OverlappingError, lambda: i.create_network('10.5.1.0', 19))
 
+    def test_master_router_multiple_connections(self):
+        i = NetworkCreator()
+        network_1_id = i.create_network("10.5.1.0", 24)
+        master_router_id = i.create_router(True)
+        network_2_id = i.create_network("10.5.2.0", 24)
+
+        # Should raise an exception because at the current state of the RTG, only one subnetwork is allowed to connect
+        # to the master router (the one having the internet connection). This will be changed later on.
+        self.assertRaises(Exception,
+                          lambda: i.connect_router_to_networks(
+                              i.uid_to_name("router", master_router_id),
+                              {
+                                  i.uid_to_name("subnet", network_1_id): None,
+                                  i.uid_to_name("subnet", network_2_id): None
+                              }
+                          )
+                          )
+
 
 if __name__ == '__main__':
     unittest.main()

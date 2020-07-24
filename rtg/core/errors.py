@@ -75,3 +75,16 @@ class UnreachableNetwork(Exception):
     def __str__(self):
         return f"The subnetwork '{self.name}' (CIDR {self.cidr}) is unreachable from master router. " \
                f"Total unreachable: {self.total}"
+
+
+class MasterRouterError(Exception):
+
+    def __init__(self, no_internet=False):
+        if no_internet:
+            self.text = "There is no connection to the internet on this network. Please connect one router."
+        else:
+            self.text = "An exception occured during master router definition. " \
+                        "Please verify ONE (and only one) router is connected to internet"
+
+    def __str__(self):
+        return self.text

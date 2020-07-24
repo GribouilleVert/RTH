@@ -1,6 +1,6 @@
 import unittest
 from rtg.core.dispatcher import Dispatcher
-from rtg.core.errors import UnreachableNetwork
+from rtg.core.errors import UnreachableNetwork, MasterRouterError
 import unittest.mock as m
 
 
@@ -56,6 +56,9 @@ class MyTestCase(unittest.TestCase):
 
                 }
             },
+            #
+            # EXPECTED CRASHES
+            #
             # Expected to crash because one network is unreachable
             "unreachable": {
                 'subnets': {
@@ -83,23 +86,71 @@ class MyTestCase(unittest.TestCase):
                         "C": "192.168.1.253",
                         "D": "10.0.1.253"
                     }
-                },
-                'expected_hops': {
-                    (0, 1): [1],
-                    (0, 2): [1, 0],
-                    (0, 3): [1, 0, 2],
-                    (1, 0): [1],
-                    (1, 2): [0],
-                    (1, 3): [0, 2],
-                    (2, 0): [0, 1],
-                    (2, 1): [0],
-                    (2, 3): [2],
-                    (3, 0): [2, 0, 1],
-                    (3, 1): [2, 0],
-                    (3, 2): [2]
-
                 }
             },
+            "no_master_router": {
+                'subnets': {
+                    'A': "10.0.0.0/24",
+                    'B': "192.168.0.0/24",
+                    'C': "192.168.1.0/24",
+                    'D': "10.0.1.0/24"
+                },
+                'routers': {
+                    1: None,
+                    2: None,
+                    3: None,
+                    4: None
+                },
+                'links': {
+                    1: {
+                        'B': "192.168.0.26",
+                        'C': "192.168.1.250"
+                    },
+                    2: {
+                        "B": "192.168.0.253"
+                    },
+                    4: {'D': "10.0.1.254"},
+                    3: {
+                        "C": "192.168.1.253",
+                        "D": "10.0.1.253"
+                    }
+                }
+            },
+            "multiple_master_routers": {
+                'subnets': {
+                    'A': "10.0.0.0/24",
+                    'B': "192.168.0.0/24",
+                    'C': "192.168.1.0/24",
+                    'D': "10.0.1.0/24"
+                },
+                'routers': {
+                    1: None,
+                    2: None,
+                    3: None,
+                    4: True,
+                    5: True
+                },
+                'links': {
+                    1: {
+                        'B': "192.168.0.26",
+                        'C': "192.168.1.250"
+                    },
+                    2: {
+                        "B": "192.168.0.253"
+                    },
+                    4: {'D': "10.0.1.254"},
+                    3: {
+                        "C": "192.168.1.253",
+                        "D": "10.0.1.253"
+                    },
+                    5: {
+                        "D": None
+                    }
+                }
+            },
+            #
+            # MULTIPLE
+            #
             # When ants encounter two network possibilities
             "multiple_choices_networks": {
                 'subnets': {
@@ -216,14 +267,23 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(e, a)
 
     #
-    # Unreachable upon sweep
+    # Crashes
     #
     def test_crash_unreachable_network(self):
-
         self.assertRaises(UnreachableNetwork, lambda: self.prepare_run("unreachable"))
 
+    def test_crash_no_master_router(self):
+        self.assertRaises(MasterRouterError, lambda: self.prepare_run("no_master_router"))
+
+    def test_crash_multiple_master_routers(self):
+        # This one uses a little trick to crash at the Ants step and not before (at the NetworkCreator step)
+        # NetworkCreator checks if the master router is connected to more than one subnetwork, and if yes throws
+        # an exception. So, I created a fake master router connected to only one subnetwork in order to crash at the
+        # wanted step.
+        self.assertRaises(MasterRouterError, lambda: self.prepare_run("multiple_master_routers"))
+
     #
-    # Multiple choices to explore
+    # Multiple choices
     #
     def test_multiple_networks_to_explore(self):
 
@@ -235,14 +295,8 @@ class MyTestCase(unittest.TestCase):
         e, a = self.prepare_run("multiple_choices_routers")
         self.assertEqual(e, a)
 
-    def test_multiple_paths(self):
-
-        e, a = self.prepare_run("multiple_paths")
-        self.assertEqual(e, a)
-
     @m.patch("builtins.print")
     def test_multiple_to_explore_mocked_debug(self, _):
-
         # Those printed lines are supposed to be debug things, so we don't try and test them for it shouldn't be enabled
         # in production.
 
@@ -255,6 +309,11 @@ class MyTestCase(unittest.TestCase):
         inst = Dispatcher(debug=True)
         inst.execute(test['subnets'], test['routers'], test['links'])
         self.assertEqual(test["expected_hops"], inst.hops)
+
+    def test_multiple_paths(self):
+
+        e, a = self.prepare_run("multiple_paths")
+        self.assertEqual(e, a)
 
 
 if __name__ == '__main__':

@@ -62,6 +62,7 @@ class Dispatcher:
     """
 
     __virtual_network_instance = None
+    __executed = None
 
     subnetworks, routers, links = None, None, None
     equitemporality = None
@@ -77,6 +78,7 @@ class Dispatcher:
     def __init__(self, debug=False):
         self.__virtual_network_instance = NetworkCreator()
         self.debug = debug
+        self.__executed = False
 
     #
     # Class execution flow
@@ -88,6 +90,7 @@ class Dispatcher:
 
         self.equitemporality = equitemporality
         self.__flow()
+        self.__executed = True
 
     def __flow(self):
         self.__checks()
@@ -156,7 +159,7 @@ class Dispatcher:
         self.gend_routers_names = inst.routers_names
 
     def network_raw_output(self):
-        return self.__virtual_network_instance.network_raw_output()
+        return self.__virtual_network_instance.network_raw_output() if self.__executed else None
 
     #
     # Ants Discovery
@@ -174,7 +177,7 @@ class Dispatcher:
     #
     # Routing Tables Generator
     #
-    def __calculate_routing_tables(self, raw=True):
+    def __calculate_routing_tables(self):
         """
         This is the main function.
             It will pass the low-level processing (discovering the links that are virtually created by the program)
@@ -201,26 +204,31 @@ class Dispatcher:
         self.routing_tables = routing_tables
 
         # formatting them to be displayed
-        if raw is True:
-            final = {}
-            for i in range(len(self.routers)):
-                name = self.gend_routers_names[i]
-                final[name] = routing_tables[i]
+        final = {}
+        for i in range(len(self.routers)):
+            name = self.gend_routers_names[i]
+            final[name] = routing_tables[i]
 
-            # reformatting final table to print in strings the router IP instead of having a FBL instance
-            for router in final:
-                for key in final[router]:
-                    final[router][key] = str(final[router][key])
+        # reformatting final table to print in strings the router IP instead of having a FBL instance
+        for router in final:
+            for key in final[router]:
+                final[router][key] = str(final[router][key])
 
-            self.formatted_raw_routing_tables = final
-        else:
-            for i in range(len(self.routers)):
-                print(f"Router {i}")
-                print("---------------")
+        self.formatted_raw_routing_tables = final
 
-                for j in range(len(routing_tables[i])):
-                    subnet = list(routing_tables[i].keys())[j]
-                    subnet += ''.join([' ' for _ in range(18 - len(subnet))])
-                    ip = list(routing_tables[i].values())[j]
-                    print(f"{subnet}: {ip}")
-                print()
+    def display_routing_tables(self):
+        if self.__executed:
+            for name in self.formatted_raw_routing_tables:
+                print(f"Router {name}")
+                for subnet in self.formatted_raw_routing_tables[name]:
+                    print(f"  - {subnet}", ''.join([' ' for _ in range(18 - len(subnet))]),
+                          f": {self.formatted_raw_routing_tables[name][subnet]}")
+
+    def output_routing_tables(self, file_path):
+        if self.__executed:
+            with open(file_path, encoding="utf-8", mode="w") as f:
+                for name in self.formatted_raw_routing_tables:
+                    f.write(f"\nRouter {name}\n")
+                    for subnet in self.formatted_raw_routing_tables[name]:
+                        f.write(f"  - {subnet} {''.join([' ' for _ in range(18 - len(subnet))])} : "
+                                f"{self.formatted_raw_routing_tables[name][subnet]}\n")
