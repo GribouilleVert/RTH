@@ -218,6 +218,26 @@ class Dispatcher:
 
     def display_routing_tables(self):
         if self.__executed:
+            # Hops
+            print("----- HOPS -----")
+            for tup in self.hops:
+                s, e = tup
+                path = self.hops[tup]
+                string = f"From subnetwork {self.__virtual_network_instance.uid_to_name('subnet', s)} " \
+                         f"to subnetwork {self.__virtual_network_instance.uid_to_name('subnet', e)}: "
+
+                if len(path) == 1:
+                    string += f"router {self.__virtual_network_instance.uid_to_name('router', path[0])}"
+                else:
+                    for i in range(len(path)):
+                        if i > 0:
+                            string += " > "
+                        string += f"router {self.__virtual_network_instance.uid_to_name('router', path[i])}"
+
+                print(string)
+
+            # Routing tables
+            print("\n\n----- ROUTING TABLES -----")
             for name in self.formatted_raw_routing_tables:
                 print(f"Router {name}")
                 for subnet in self.formatted_raw_routing_tables[name]:
@@ -227,6 +247,26 @@ class Dispatcher:
     def output_routing_tables(self, file_path):
         if self.__executed:
             with open(file_path, encoding="utf-8", mode="w") as f:
+                # Hops
+                f.write("----- HOPS -----\n")
+                for tup in self.hops:
+                    s, e = tup
+                    path = self.hops[tup]
+                    string = f"Subnet {self.__virtual_network_instance.uid_to_name('subnet', s)} " \
+                             f"to subnet {self.__virtual_network_instance.uid_to_name('subnet', e)}: "
+
+                    if len(path) == 1:
+                        string += f"router {self.__virtual_network_instance.uid_to_name('router', path[0])}"
+                    else:
+                        for i in range(len(path)):
+                            if i > 0:
+                                string += " > "
+                            string += f"router {self.__virtual_network_instance.uid_to_name('router', path[i])}"
+
+                    f.write(string + '\n')
+
+                # Routing tables
+                f.write("\n\n----- ROUTING TABLES -----\n")
                 for name in self.formatted_raw_routing_tables:
                     f.write(f"\nRouter {name}\n")
                     for subnet in self.formatted_raw_routing_tables[name]:
