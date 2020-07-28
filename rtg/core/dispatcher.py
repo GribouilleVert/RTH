@@ -1,7 +1,7 @@
 from rtg.virtual_building.network_creator import NetworkCreator
 from rtg.virtual_building.ants import AntsDiscovery
 from rtg.virtual_building.routing_tables_generator import RoutingTablesGenerator
-from .errors import WronglyFormedSubnetworksData, WronglyFormedRoutersData, WronglyFormedLinksData, MissingDataParameter
+from .errors import WronglyFormedSubnetworksData, WronglyFormedRoutersData, WronglyFormedLinksData
 from nettools.utils.ip_class import FourBytesLiteral
 
 
@@ -184,7 +184,6 @@ class Dispatcher:
         to the virtual_building category.
             Its objective is also to handle the different parameters in order to pass certain unit tests.
 
-        :param raw: boolean for whether the results are given in a table or in raw python dict format
         :return: returns final result if raw is True, else displays it.
             In further versions, the raw option should disappear to leave room for more useful things.
             The results, sent to another process, won't need to be displayed anymore, so raw will be implied.
@@ -193,8 +192,8 @@ class Dispatcher:
         if not self.links or self.hops:
             self.__discover_hops()
 
-        rtg_inst = RoutingTablesGenerator(self.gend_subnetworks, self.gend_routers,
-                                          self.links, self.hops, self.equitemporality)
+        rtg_inst = RoutingTablesGenerator(self.__virtual_network_instance, self.gend_subnetworks, self.gend_routers,
+                                          self.links, self.hops, equitemporality=self.equitemporality)
 
         # getting routing tables
         routing_tables = []
@@ -212,7 +211,8 @@ class Dispatcher:
         # reformatting final table to print in strings the router IP instead of having a FBL instance
         for router in final:
             for key in final[router]:
-                final[router][key] = str(final[router][key])
+                final[router][key]['gateway'] = str(final[router][key]['gateway'])
+                final[router][key]['interface'] = str(final[router][key]['interface'])
 
         self.formatted_raw_routing_tables = final
 
@@ -242,7 +242,8 @@ class Dispatcher:
                 print(f"Router {name}")
                 for subnet in self.formatted_raw_routing_tables[name]:
                     print(f"  - {subnet}", ''.join([' ' for _ in range(18 - len(subnet))]),
-                          f": {self.formatted_raw_routing_tables[name][subnet]}")
+                          f": {self.formatted_raw_routing_tables[name][subnet]['gateway']} "
+                          f"via {self.formatted_raw_routing_tables[name][subnet]['interface']}")
 
     def output_routing_tables(self, file_path):
         if self.__executed:
@@ -271,4 +272,5 @@ class Dispatcher:
                     f.write(f"\nRouter {name}\n")
                     for subnet in self.formatted_raw_routing_tables[name]:
                         f.write(f"  - {subnet} {''.join([' ' for _ in range(18 - len(subnet))])} : "
-                                f"{self.formatted_raw_routing_tables[name][subnet]}\n")
+                                f"{self.formatted_raw_routing_tables[name][subnet]['gateway']} "
+                                f"via {self.formatted_raw_routing_tables[name][subnet]['interface']}\n")

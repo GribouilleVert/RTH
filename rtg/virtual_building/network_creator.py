@@ -55,7 +55,7 @@ class NetworkCreator:
 
         The class can stock informations about the routers connected to it.
 
-        :ivar routers: The dict of the connected routers. Format: [{'uid': router_uid, 'ip': router_ip}, ...]
+        :ivar routers: The dict of the connected routers. Format: {router_uid: router_ip, ...}
         """
 
         network_range, addresses, mask_length = {}, 0, 0
@@ -70,14 +70,14 @@ class NetworkCreator:
             self.name = name if name else None
             self.cidr = f"{starting_ip}/{inst_.mask_length}"
 
-            self.routers = []
+            self.routers = {}
 
             self.network_range = inst_.network_range
             self.mask_length = inst_.mask_length
             self.addresses = inst_.addresses
 
         def connect(self, router_uid, router_ip):
-            self.routers.append({'uid': router_uid, 'ip': router_ip})
+            self.routers[router_uid] = router_ip
 
         def disconnect(self, router_uid):
             for i in range(len(self.routers)):
@@ -90,7 +90,7 @@ class NetworkCreator:
 
         This class can stock informations on the subnets it is connected to.
 
-        :ivar connected_networks: The dict of the connected subnets. Format: [{'uid': net_uid, 'ip': router_ip}, ...]
+        :ivar connected_networks: The dict of the connected subnets. Format: {net_uid: router_ip, ...}
         """
 
         uid, name = -1, None
@@ -104,18 +104,32 @@ class NetworkCreator:
                 raise NoDelayAllowed()
             else:
                 self.delay = delay
-            self.connected_networks = []
+            self.connected_networks = {}
 
         def connect(self, subnet_uid, router_ip):
             if self.internet and self.connected_networks:
                 raise Exception('Master router cannot accept more than one connection')
 
-            self.connected_networks.append({'uid': subnet_uid, 'ip': router_ip})
+            self.connected_networks[subnet_uid] = router_ip
 
         def disconnect(self, subnet_uid):
             for i in range(len(self.connected_networks)):
                 if self.connected_networks[i]['uid'] == subnet_uid:
                     del self.connected_networks[i]
+
+    #
+    # Getters
+    #
+    def get_ip_of_router_on_subnetwork(self, subnet_id, router_id):
+        if subnet_id not in self.subnetworks:
+            return None
+
+        subnet = self.subnetworks[subnet_id]['instance']
+
+        if router_id not in subnet.routers:
+            return None
+
+        return subnet.routers[router_id]
 
     #
     # Converters
@@ -293,8 +307,8 @@ class NetworkCreator:
             # then we check that ip is not used by any of the current routers
             routers = subnet_inst_.routers
             for r in routers:
-                if str(r['ip']) == str(ip_):
-                    raise IPAlreadyAttributed(name, ip_, self.uid_to_name('router', r['uid']), str(router_name))
+                if str(routers[r]) == str(ip_):
+                    raise IPAlreadyAttributed(name, ip_, self.uid_to_name('router', r), str(router_name))
 
         router_uid = self.name_to_uid('router', router_name)
 
@@ -348,12 +362,9 @@ class NetworkCreator:
             subnet = self.subnetworks[sid]['instance']
 
             displayable_connected_routers = subnet.routers.copy()
-            for i in range(len(displayable_connected_routers)):
-                displayable_connected_routers[i] = {
-                    'uid': displayable_connected_routers[i]['uid'],
-                    'ip': str(displayable_connected_routers[i]['ip'])
-                }
-            
+            for i in displayable_connected_routers:
+                displayable_connected_routers[i] = str(displayable_connected_routers[i])
+
             final['subnets'][sid] = {
                 'id': subnet.uid,
                 'name': subnet.name,
@@ -361,17 +372,14 @@ class NetworkCreator:
                 'range': Utils.netr_to_literal(subnet.network_range),
                 'mask': subnet.mask_length
             }
-            
+
         for rid in self.routers:
             router = self.routers[rid]
 
             displayable_connected_subnets = router.connected_networks.copy()
-            for i in range(len(displayable_connected_subnets)):
-                displayable_connected_subnets[i] = {
-                    'uid': displayable_connected_subnets[i]['uid'],
-                    'ip': str(displayable_connected_subnets[i]['ip'])
-                }
-            
+            for i in displayable_connected_subnets:
+                displayable_connected_subnets[i] = str(displayable_connected_subnets[i])
+
             final['routers'][rid] = {
                 'id': router.uid,
                 'name': router.name,

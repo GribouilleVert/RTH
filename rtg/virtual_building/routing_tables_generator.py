@@ -6,7 +6,8 @@ class RoutingTablesGenerator:
     #
     # DUNDERS
     #
-    def __init__(self, subnets, routers, links, hops, equitemporality=True):
+    def __init__(self, network_creator_instance, subnets, routers, links, hops, equitemporality=True):
+        self.ncinst = network_creator_instance
         # given basics
         self.subnets = subnets
         self.routers = routers
@@ -20,10 +21,7 @@ class RoutingTablesGenerator:
     #
     @staticmethod
     def router_ip(instance_, provided):
-        for k in range(len(instance_.routers)):
-            if instance_.routers[k]['uid'] == provided:
-                return instance_.routers[k]['ip']
-        return False
+        return instance_.routers[provided] if provided in instance_.routers else False
 
     #
     # Executers
@@ -66,12 +64,14 @@ class RoutingTablesGenerator:
 
     def try_router_connected_to_subnet(self, subnets, router_uid):
         ip_ = None
+        sub = None
         for subnet_ in subnets:
             result = self.router_ip(self.subnets[subnet_]['instance'], router_uid)
             if result is not False:
                 ip_ = result
+                sub = subnet_
                 break
-        return ip_
+        return ip_, sub
 
     #
     # Callable
@@ -85,7 +85,10 @@ class RoutingTablesGenerator:
         # starting off by listing attached subnets and getting their ip for this router
         for subnet in subnets_attached:
             inst_ = self.subnets[subnet]['instance']
-            routing_table[inst_.cidr] = self.router_ip(inst_, router_id)
+            routing_table[inst_.cidr] = {
+                'gateway': self.router_ip(inst_, router_id),
+                'interface': self.router_ip(inst_, router_id)
+            }
             subnets_done.append(subnet)
 
         # getting master route
@@ -98,12 +101,20 @@ class RoutingTablesGenerator:
                                                            master_attached, subnets_attached)
 
         # now retrieving the IP of this router that points to the subnetwork leading to the master router
-        to_master_ip = self.try_router_connected_to_subnet(subnets_attached, to_master_uid)
+        to_master_gateway, to_master_uid = self.try_router_connected_to_subnet(subnets_attached, to_master_uid)
 
-        if not to_master_ip:
+        if not to_master_gateway:
             raise Exception("To-master router should have been found in at least one of the subnetworks")
 
-        routing_table['0.0.0.0/0'] = to_master_ip
+        to_master_interface = self.ncinst.get_ip_of_router_on_subnetwork(to_master_uid, router_id)
+
+        if to_master_interface is None:
+            raise Exception(f"Interface to master of router {router_id} should not be None")
+
+        routing_table['0.0.0.0/0'] = {
+            "gateway": to_master_gateway,
+            "interface": to_master_interface
+        }
 
         # now we get each non-registered-yet subnet left
         subnets_left = [i for i in self.subnets
@@ -113,10 +124,17 @@ class RoutingTablesGenerator:
 
         for subnet in subnets_left:
             router = paths[subnet][0]
-            ip = self.try_router_connected_to_subnet(subnets_attached, router)
+            ip, subnet_id = self.try_router_connected_to_subnet(subnets_attached, router)
             if not ip:
                 raise Exception(f"Router id {router} should have been found in at least one of the subnetworks")
-            routing_table[self.subnets[subnet]['instance'].cidr] = ip
+            interface = self.ncinst.get_ip_of_router_on_subnetwork(subnet_id, router_id)
+            if not interface:
+                raise Exception(f"Could not find interface of router {router_id} on subnet {subnet_id}, though the "
+                                f"router points to a gateway on this subnetwork")
+            routing_table[self.subnets[subnet]['instance'].cidr] = {
+                "gateway": ip,
+                "interface": interface
+            }
 
         return routing_table
 

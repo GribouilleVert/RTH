@@ -53,7 +53,7 @@ class NetworkCreatorTests(unittest.TestCase):
         self.assertEqual({"start": "192.168.1.0", "end": "192.168.1.255"}, Utils.netr_to_literal(net.network_range),
                          msg="Network range")
         self.assertEqual(24, net.mask_length, msg="Network mask length")
-        self.assertEqual([], net.routers, msg="Network connected routers")
+        self.assertEqual({}, net.routers, msg="Network connected routers")
 
     def test_verify_lone_router(self):
         i = NetworkCreator()
@@ -65,7 +65,7 @@ class NetworkCreatorTests(unittest.TestCase):
         self.assertEqual("<Untitled Router#ID:0>", r.name, msg="Router name")
 
         self.assertEqual(True, r.internet, msg="Router internet connection")
-        self.assertEqual([], r.connected_networks, msg="Router connected networks")
+        self.assertEqual({}, r.connected_networks, msg="Router connected networks")
 
     #
     # Name

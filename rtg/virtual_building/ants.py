@@ -166,23 +166,11 @@ class AntsDiscovery:
 
         for s in range(len(self.subnets)):
             routers = self.subnets[s]['instance'].routers
-
-            uids = []
-            for n in range(len(routers)):
-                uids.append(routers[n]['uid'])
-            uids.sort()
-
-            links['subnets'][s] = uids
+            links['subnets'][s] = routers.keys()
 
         for s in range(len(self.routers)):
             nets = self.routers[s].connected_networks
-
-            uids = []
-            for n in range(len(nets)):
-                uids.append(nets[n]['uid'])
-            uids.sort()
-
-            links['routers'][s] = uids
+            links['routers'][s] = nets.keys()
 
         # matrix
         matrix = []
@@ -457,7 +445,7 @@ class AntsDiscovery:
         """
 
         master = self.master_router
-        subnet_start = self.routers[master].connected_networks[0]['uid']
+        subnet_start = list(self.routers[master].connected_networks.keys())[0]
 
         result, _ = self.ants_discovery_process('sweep', self.links, subnet_start, debug=self.debug)
 
