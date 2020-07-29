@@ -132,7 +132,7 @@ class NetworkCreatorTests(unittest.TestCase):
         master_router_id = i.create_router(True)
         network_2_id = i.create_network("10.5.2.0", 24)
 
-        # Should raise an exception because at the current state of the RTG, only one subnetwork is allowed to connect
+        # Should raise an exception because at the current state of the RTH, only one subnetwork is allowed to connect
         # to the master router (the one having the internet connection). This will be changed later on.
         self.assertRaises(Exception,
                           lambda: i.connect_router_to_networks(

@@ -9,56 +9,6 @@ class Dispatcher:
     """
     This is the dispatcher class. Which everything comes from and where everything goes.
     We could call that a hub, I call that a good way to handle a complex program.
-
-    If you want to provide raw data to this class, here are some explanations about how they are formed.
-        Subnetworks: a dictionary of form {name: CIDR}
-            ex: {
-                    "A": "10.0.0.0/24",
-                    'B': "192.168.0.0/24"
-                }
-        Routers: a dictionary of form {name: connection}
-            connection is either None/False or True. Only one router per network is allowed to have an internet
-            connection for now.
-            ex: {
-                    "1": None,
-                    "2": None,
-                    "3": None,
-                    "4": True
-                }
-        Links: this one is more complicated. It is a dictionary of dictionaries of form {router_name: list_of_subnets}
-            the list is a dictionary itself, with the name of the subnetwork as a key and either an IP of said
-            subnetwork or None as a value (setting it to None tells RTG to assign the first free IP starting from the
-            broadcast address of said subnetwork).
-            ex: {
-                    "1": {
-                        'B': None,
-                        'C': None
-                    },
-                    "2": {
-                        "A": None,
-                        "B": None
-                    },
-                    "4": {'D': None},
-                    "3": {
-                        "C": None,
-                        "D": None
-                    }
-                }
-            second ex: {
-                    1: {
-                        'B': "192.168.0.26",
-                        'C': "192.168.1.250"
-                    },
-                    2: {
-                        "A": "10.0.0.45",
-                        "B": "192.168.0.253"
-                    },
-                    4: {'D': "10.0.1.254"},
-                    3: {
-                        "C": "192.168.1.253",
-                        "D": "10.0.1.253"
-                    }
-                }
     """
 
     __virtual_network_instance = None

@@ -2,17 +2,15 @@
 
 A program made by a lover of new technologies, for all networking developers, sysadmins and other people that might find any
 use to it.
+It aims to ease the creation and calculus of routing tables when working on networks.
 
 ## Is it finished yet?
 
 No, the program is only in its first stable release. I'm always hoping to create and innovate more; maybe it won't be
 updated for a moment, but it doesn't mean I let it down either.
 
-### So, how to use it?
-
-Well, here's the problem. For the moment, you can't. I can't give any release date for now, but I work on it.
-
-### How to contact me, then?
+### Contact info
+By mail: biothewolff [at] gmx [dot] fr\
 On Discord: BioTheWolff#7708\
 You can also find me on these two french Discord servers:
 - [Developpeur(euse)s FR](https://discord.gg/8d4ACG5)
@@ -21,8 +19,11 @@ You can also find me on these two french Discord servers:
 ## What is it?
 
 The Routing Tables Helper, or RTH, is a program that aims to provide an easy, and quick, way to create routing
-tables. Instead of having to create them by hand, using a Virtual Machine or your own network, and a piece of paper,
+tables. Instead of having to create them by hand, using a Virtual Machine (VM) or your own network, and a piece of paper,
 this virtual network builder and routing tables generator does it all for you.
+
+The RTH is based on, and uses, another of my programs, [nettools](https://github.com/BioTheWolff/NetTools), a tool for fast networks
+and IPs handling and calculus.
 
 # Documentation
 
@@ -173,7 +174,7 @@ inst.execute(subnetworks, routers, links)
 This title may be a bit weird, but it will become clear in a second. The program, when it encounters several possible ways
 to get from a subnetwork to another, will have to make a choice. Therefore, the path followed by the program, which will be 
 of course visible on the routing tables at the end might disturb you. So, in order to clear doubts and help the users find the
-path quicker, I included a "hops" seconds in the output.
+path faster, I included a "hops" section in the output.
 
 It looks like this:
 ```ignorelang
@@ -204,4 +205,5 @@ Router MyRouter
   - 10.0.1.0/24         : 192.168.1.253 via 192.168.1.254
 ```
 
-As you may have guessed, it is formatted as `DESTINATION NETWORK : GATEWAY via INTERFACE`
+As you may have guessed, it is formatted as `DESTINATION NETWORK : GATEWAY via INTERFACE`. The master router route
+(so the way out of the local network) is always `0.0.0.0/0` in the output.

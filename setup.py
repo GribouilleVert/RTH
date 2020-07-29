@@ -67,7 +67,8 @@ def setup_package():
     setup(
         name='rth',
         version=get_version_info()[0],
-        description='Generates routing tables using network description',
+        description='Generates paths between the subnetworks of a local network and generates routing tables '
+                    'of all the routers of said local network',
         long_description=md_desc,
         long_description_content_type="text/markdown",
 
@@ -106,7 +107,8 @@ def setup_package():
         ],
 
         python_requires='>=3.6',
-        zip_safe=False
+        zip_safe=False,
+        scripts=['bin/runtests']
     )
 
 
