@@ -3,14 +3,14 @@ from nettools.utils.ip_class import FourBytesLiteral
 from nettools.utils.utils import Utils
 from nettools.utils.errors import IPOffNetworkRangeException
 
-from rtg.core.errors import *
+from rth.core.errors import *
 
 
 class NetworkCreator:
     """
     This class is the virtual environment which contains everything for the program to run.
 
-    This is the foundation where everything is.
+    This is the base everything is built on.
 
     The Network class is the virtual network existing in this environment.
     The Router class is the virtual router existing in this environment.
@@ -55,12 +55,12 @@ class NetworkCreator:
 
         The class can stock informations about the routers connected to it.
 
-        :ivar routers: The dict of the connected routers. Format: [{'uid': router_uid, 'ip': router_ip}, ...]
+        :ivar routers: The dict of the connected routers. Format: {router_uid: router_ip, ...}
         """
 
         network_range, addresses, mask_length = {}, 0, 0
         routers = None
-        uid, name = 0, None
+        uid, name = -1, None
 
         def __init__(self, starting_ip, mask, uid, name=None):
 
@@ -70,14 +70,14 @@ class NetworkCreator:
             self.name = name if name else None
             self.cidr = f"{starting_ip}/{inst_.mask_length}"
 
-            self.routers = []
+            self.routers = {}
 
             self.network_range = inst_.network_range
             self.mask_length = inst_.mask_length
             self.addresses = inst_.addresses
 
         def connect(self, router_uid, router_ip):
-            self.routers.append({'uid': router_uid, 'ip': router_ip})
+            self.routers[router_uid] = router_ip
 
         def disconnect(self, router_uid):
             for i in range(len(self.routers)):
@@ -90,10 +90,10 @@ class NetworkCreator:
 
         This class can stock informations on the subnets it is connected to.
 
-        :ivar connected_networks: The dict of the connected subnets. Format: [{'uid': net_uid, 'ip': router_ip}, ...]
+        :ivar connected_networks: The dict of the connected subnets. Format: {net_uid: router_ip, ...}
         """
 
-        uid, name = 0, None
+        uid, name = -1, None
         connected_networks, internet = None, False
 
         def __init__(self, uid, internet=False, name=None, delay=None):
@@ -104,18 +104,32 @@ class NetworkCreator:
                 raise NoDelayAllowed()
             else:
                 self.delay = delay
-            self.connected_networks = []
+            self.connected_networks = {}
 
         def connect(self, subnet_uid, router_ip):
             if self.internet and self.connected_networks:
                 raise Exception('Master router cannot accept more than one connection')
 
-            self.connected_networks.append({'uid': subnet_uid, 'ip': router_ip})
+            self.connected_networks[subnet_uid] = router_ip
 
         def disconnect(self, subnet_uid):
             for i in range(len(self.connected_networks)):
                 if self.connected_networks[i]['uid'] == subnet_uid:
                     del self.connected_networks[i]
+
+    #
+    # Getters
+    #
+    def get_ip_of_router_on_subnetwork(self, subnet_id, router_id):
+        if subnet_id not in self.subnetworks:
+            return None
+
+        subnet = self.subnetworks[subnet_id]['instance']
+
+        if router_id not in subnet.routers:
+            return None
+
+        return subnet.routers[router_id]
 
     #
     # Converters
@@ -160,49 +174,69 @@ class NetworkCreator:
     #
     # Creators
     #
-    def create_network(self, ip, mask, name=None):
+    def create_network(self, ip, mask_length, name=None):
         """
         Function used to create a virtual network using Network class
 
         :param ip:
-        :param mask:
+        :param mask_length:
         :param name: The possible name of the network
-        TODO: given name created by program if no name given as param
         :return uid: the uid of the newly created network
         """
+
+        uid = len(self.subnetworks)
 
         # Name correspondency
         if name:
             result = self.is_name_existing('subnet', name)
             if result:
                 raise NameAlreadyExists(name)
+        else:
+            name = f"<Untitled Network#ID:{uid}>"
 
-        uid = len(self.subnetworks)
-
-        # convert ip literal to FBL
-        fbl_ip = FourBytesLiteral().set_from_string_literal(ip)
+        current = self.Network(ip, mask_length, uid, name)
+        current_netr = Utils.netr_to_literal(current.network_range)
 
         if self.ranges:
-            # we check for starting ip
-            for range_ in self.ranges:
-                result = Utils.ip_in_range(range_, ip)
-                if result:
-                    raise OverlappingError('start', range_, ip, mask)
+            for sid in self.subnetworks:
+                subnet = self.subnetworks[sid]['instance']
+                subnetr = Utils.netr_to_literal(subnet.network_range)
 
-            inst_ = self.Network(ip, mask, uid, name)
-            self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
+                overlap = False
+                if current.mask_length == subnet.mask_length:
+                    # Masks are equal
+                    if current_netr['start'] == subnetr['start']:
+                        overlap = True
+                else:
+                    if current.mask_length < subnet.mask_length:
+                        # New network mask is bigger, check if the existing subnetwork is inside
+                        big = current_netr['start'].split('.')
+                        small = subnetr['start']
+                    else:
+                        # New network is smaller that existing subnetwork, check if it is inside
+                        small = current_netr['start']
+                        big = subnetr['start'].split('.')
 
-            # then we check last ip of range to check nothing is overlapping
-            for range_ in self.ranges:
-                result = Utils.ip_in_range(range_, inst_.network_range['end'])
-                if result:
-                    raise OverlappingError('end', range_, Utils.netr_to_literal(inst_.network_range))
-        else:
-            inst_ = self.Network(ip, mask, uid, name)
-            self.subnetworks[uid] = {'instance': inst_, 'range': inst_.network_range}
+                    if current.mask_length <= 8:
+                        if int(big[0]) <= int(small.split('.')[0]):
+                            overlap = True
+                    elif 8 < current.mask_length <= 16:
+                        if small.startswith(f"{big[0]}") and int(big[1]) <= int(small.split('.')[1]):
+                            overlap = True
+                    elif 16 < current.mask_length <= 24:
+                        if small.startswith(f"{big[0]}.{big[1]}") and int(big[2]) <= int(small.split('.')[2]):
+                            overlap = True
+                    elif 24 < current.mask_length <= 32:
+                        if int(big[3]) <= int(small.split('.')[3]):
+                            overlap = True
+
+                if overlap:
+                    raise OverlappingError(current_netr, subnetr)
+
+        self.subnetworks[uid] = {'instance': current, 'range': current.network_range}
 
         # adding to network ranges
-        self.ranges.append(inst_.network_range)
+        self.ranges.append(current.network_range)
         # also adding name if defined
         if name:
             self.subnets_names.append(name)
@@ -215,16 +249,18 @@ class NetworkCreator:
 
         :param internet_connection: boolean for whether the router is a connexion to the outer world (internet)
         :param name: The eventual name of the router
-        TODO: given name created by program if no name given as param
         :return uid: The uid of the newly created router
         """
+
+        uid = len(self.routers)
 
         if name:
             result = self.is_name_existing('router', name)
             if result:
                 raise NameAlreadyExists(name)
+        else:
+            name = f"<Untitled Router#ID:{uid}>"
 
-        uid = len(self.routers)
         inst_ = self.Router(uid, internet_connection, name)
 
         self.routers_names.append(name)
@@ -254,7 +290,7 @@ class NetworkCreator:
             :raise:
                 NetworkUtilities.core.errors.IPOffNetworkRangeException
                 or
-                rtg.core.errors.IPAlreadyAttributed
+                rth.core.errors.IPAlreadyAttributed
             """
 
             # Checking that ip is effectively in range of the subnet
@@ -271,8 +307,8 @@ class NetworkCreator:
             # then we check that ip is not used by any of the current routers
             routers = subnet_inst_.routers
             for r in routers:
-                if str(r['ip']) == str(ip_):
-                    raise IPAlreadyAttributed(name, ip_, self.uid_to_name('router', r['uid']), str(router_name))
+                if str(routers[r]) == str(ip_):
+                    raise IPAlreadyAttributed(name, ip_, self.uid_to_name('router', r), str(router_name))
 
         router_uid = self.name_to_uid('router', router_name)
 
@@ -326,12 +362,9 @@ class NetworkCreator:
             subnet = self.subnetworks[sid]['instance']
 
             displayable_connected_routers = subnet.routers.copy()
-            for i in range(len(displayable_connected_routers)):
-                displayable_connected_routers[i] = {
-                    'uid': displayable_connected_routers[i]['uid'],
-                    'ip': str(displayable_connected_routers[i]['ip'])
-                }
-            
+            for i in displayable_connected_routers:
+                displayable_connected_routers[i] = str(displayable_connected_routers[i])
+
             final['subnets'][sid] = {
                 'id': subnet.uid,
                 'name': subnet.name,
@@ -339,17 +372,14 @@ class NetworkCreator:
                 'range': Utils.netr_to_literal(subnet.network_range),
                 'mask': subnet.mask_length
             }
-            
+
         for rid in self.routers:
             router = self.routers[rid]
 
             displayable_connected_subnets = router.connected_networks.copy()
-            for i in range(len(displayable_connected_subnets)):
-                displayable_connected_subnets[i] = {
-                    'uid': displayable_connected_subnets[i]['uid'],
-                    'ip': str(displayable_connected_subnets[i]['ip'])
-                }
-            
+            for i in displayable_connected_subnets:
+                displayable_connected_subnets[i] = str(displayable_connected_subnets[i])
+
             final['routers'][rid] = {
                 'id': router.uid,
                 'name': router.name,

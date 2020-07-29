@@ -1,108 +1,12 @@
 import unittest
-from rtg.core.commander import Commander
+from rth.core.dispatcher import Dispatcher
 
 
-class MyTestCase(unittest.TestCase):
+class ProcessTests(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        temp = {
-            # Save of 1
-            1: {
-                'subnets': {
-                    'A': "10.0.0.0/24",
-                    'B': "192.168.0.0/24",
-                    'C': "192.168.1.0/24",
-                    'D': "10.0.1.0/24"
-                },
-                'routers': {
-                    1: None,
-                    2: None,
-                    3: None,
-                    4: True
-                },
-                'links': {
-                    1: {
-                        'B': "192.168.0.254",
-                        'C': "192.168.1.254"
-                    },
-                    2: {
-                        "A": "10.0.0.254",
-                        "B": "192.168.0.253"
-                    },
-                    4: {'D': "10.0.1.254"},
-                    3: {
-                        "C": "192.168.1.253",
-                        "D": "10.0.1.253"
-                    }
-                },
-                'expected_hops': {
-                    (0, 1): [1],
-                    (0, 2): [1, 0],
-                    (0, 3): [1, 0, 2],
-                    (1, 0): [1],
-                    (1, 2): [0],
-                    (1, 3): [0, 2],
-                    (2, 0): [0, 1],
-                    (2, 1): [0],
-                    (2, 3): [2],
-                    (3, 0): [2, 0, 1],
-                    (3, 1): [2, 0],
-                    (3, 2): [2]
-
-                },
-                'expected_result': {
-                    1: {
-                        "192.168.0.0/24": "192.168.0.254",
-                        "192.168.1.0/24": "192.168.1.254",
-                        "10.0.0.0/24": "192.168.0.253",
-                        "10.0.1.0/24": "192.168.1.253",
-                        "0.0.0.0/0": "192.168.1.253"
-                    },
-                    2: {
-                        "192.168.0.0/24": "192.168.0.253",
-                        "10.0.0.0/24": "10.0.0.254",
-                        "0.0.0.0/0": "192.168.0.254",
-                        "192.168.1.0/24": "192.168.0.254",
-                        "10.0.1.0/24": "192.168.0.254"
-                    },
-                    3: {
-                        "192.168.1.0/24": "192.168.1.253",
-                        "10.0.1.0/24": "10.0.1.253",
-                        "0.0.0.0/0": "10.0.1.254",
-                        "192.168.0.0/24": "192.168.1.254",
-                        "10.0.0.0/24": "192.168.1.254"
-                    },
-                    4: {
-                        "10.0.1.0/24": "10.0.1.254",
-                        "0.0.0.0/0": "10.0.1.254",
-                        "192.168.0.0/24": "10.0.1.253",
-                        "192.168.1.0/24": "10.0.1.253",
-                        "10.0.0.0/24": "10.0.1.253"
-                    }
-                }
-            },
-            2: {
-                'subnets': {
-                    'A': "192.168.0.0/24",
-                    'B': "192.168.1.0/24",
-                    'C': "10.0.0.0/24",
-                    'D': "10.0.1.0/24"
-                },
-                'routers': {
-                    1: True,
-                    2: None,
-                    4: None,
-                    5: None
-                },
-                'links': {
-                    1: ['A', 'B'],
-                    2: ['B', 'C'],
-                    4: ['A', 'D'],
-                    5: ['C', 'D']
-                }
-            }
-        }
+        self.debug_print = False
 
         self.networks = {
             # Basic network configuration
@@ -141,28 +45,28 @@ class MyTestCase(unittest.TestCase):
                         0: {
                             'id': 0,
                             'name': 'A',
-                            'connected_routers': [{'uid': 1, 'ip': '10.0.0.254'}],
+                            'connected_routers': {1: '10.0.0.254'},
                             'range': {'start': '10.0.0.0', 'end': '10.0.0.255'},
                             'mask': 24
                         },
                         1: {
                             'id': 1,
                             'name': 'B',
-                            'connected_routers': [{'uid': 0, 'ip': '192.168.0.254'}, {'uid': 1, 'ip': '192.168.0.253'}],
+                            'connected_routers': {0: '192.168.0.254', 1: '192.168.0.253'},
                             'range': {'start': '192.168.0.0', 'end': '192.168.0.255'},
                             'mask': 24
                         },
                         2: {
                             'id': 2,
                             'name': 'C',
-                            'connected_routers': [{'uid': 0, 'ip': '192.168.1.254'}, {'uid': 2, 'ip': '192.168.1.253'}],
+                            'connected_routers': {0: '192.168.1.254', 2: '192.168.1.253'},
                             'range': {'start': '192.168.1.0', 'end': '192.168.1.255'},
                             'mask': 24
                         },
                         3: {
                             'id': 3,
                             'name': 'D',
-                            'connected_routers': [{'uid': 3, 'ip': '10.0.1.254'}, {'uid': 2, 'ip': '10.0.1.253'}],
+                            'connected_routers': {3: '10.0.1.254', 2: '10.0.1.253'},
                             'range': {'start': '10.0.1.0', 'end': '10.0.1.255'},
                             'mask': 24
                         }
@@ -171,25 +75,25 @@ class MyTestCase(unittest.TestCase):
                         0: {
                             'id': 0,
                             'name': '1',
-                            'connected_subnets': [{'uid': 1, 'ip': '192.168.0.254'}, {'uid': 2, 'ip': '192.168.1.254'}],
+                            'connected_subnets': {1: '192.168.0.254', 2: '192.168.1.254'},
                             'internet': False
                         },
                         1: {
                             'id': 1,
                             'name': '2',
-                            'connected_subnets': [{'uid': 0, 'ip': '10.0.0.254'}, {'uid': 1, 'ip': '192.168.0.253'}],
+                            'connected_subnets': {0: '10.0.0.254', 1: '192.168.0.253'},
                             'internet': False
                         },
                         2: {
                             'id': 2,
                             'name': '3',
-                            'connected_subnets': [{'uid': 2, 'ip': '192.168.1.253'}, {'uid': 3, 'ip': '10.0.1.253'}],
+                            'connected_subnets': {2: '192.168.1.253', 3: '10.0.1.253'},
                             'internet': False
                         },
                         3: {
                             'id': 3,
                             'name': '4',
-                            'connected_subnets': [{'uid': 3, 'ip': '10.0.1.254'}],
+                            'connected_subnets': {3: '10.0.1.254'},
                             'internet': True
                         }
                     }
@@ -211,32 +115,32 @@ class MyTestCase(unittest.TestCase):
                 },
                 'expected_result': {
                     1: {
-                        "192.168.0.0/24": "192.168.0.254",
-                        "192.168.1.0/24": "192.168.1.254",
-                        "10.0.0.0/24": "192.168.0.253",
-                        "10.0.1.0/24": "192.168.1.253",
-                        "0.0.0.0/0": "192.168.1.253"
-                        },
+                        "192.168.0.0/24": {'gateway': '192.168.0.254', 'interface': '192.168.0.254'},
+                        "192.168.1.0/24": {'gateway': '192.168.1.254', 'interface': '192.168.1.254'},
+                        "10.0.0.0/24": {'gateway': '192.168.0.253', 'interface': '192.168.0.254'},
+                        "10.0.1.0/24": {'gateway': '192.168.1.253', 'interface': '192.168.1.254'},
+                        "0.0.0.0/0": {'gateway': '192.168.1.253', 'interface': '192.168.1.254'}
+                    },
                     2: {
-                        "192.168.0.0/24": "192.168.0.253",
-                        "10.0.0.0/24": "10.0.0.254",
-                        "0.0.0.0/0": "192.168.0.254",
-                        "192.168.1.0/24": "192.168.0.254",
-                        "10.0.1.0/24": "192.168.0.254"
+                        "192.168.0.0/24": {'gateway': '192.168.0.253', 'interface': '192.168.0.253'},
+                        "10.0.0.0/24": {'gateway': '10.0.0.254', 'interface': '10.0.0.254'},
+                        "0.0.0.0/0": {'gateway': '192.168.0.254', 'interface': '192.168.0.253'},
+                        "192.168.1.0/24": {'gateway': '192.168.0.254', 'interface': '192.168.0.253'},
+                        "10.0.1.0/24": {'gateway': '192.168.0.254', 'interface': '192.168.0.253'}
                     },
                     3: {
-                        "192.168.1.0/24": "192.168.1.253",
-                        "10.0.1.0/24": "10.0.1.253",
-                        "0.0.0.0/0": "10.0.1.254",
-                        "192.168.0.0/24": "192.168.1.254",
-                        "10.0.0.0/24": "192.168.1.254"
+                        "192.168.1.0/24": {'gateway': '192.168.1.253', 'interface': '192.168.1.253'},
+                        "10.0.1.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.253'},
+                        "0.0.0.0/0": {'gateway': '10.0.1.254', 'interface': '10.0.1.253'},
+                        "192.168.0.0/24": {'gateway': '192.168.1.254', 'interface': '192.168.1.253'},
+                        "10.0.0.0/24": {'gateway': '192.168.1.254', 'interface': '192.168.1.253'}
                     },
                     4: {
-                        "10.0.1.0/24": "10.0.1.254",
-                        "0.0.0.0/0": "10.0.1.254",
-                        "192.168.0.0/24": "10.0.1.253",
-                        "192.168.1.0/24": "10.0.1.253",
-                        "10.0.0.0/24": "10.0.1.253"
+                        "10.0.1.0/24": {'gateway': '10.0.1.254', 'interface': '10.0.1.254'},
+                        "0.0.0.0/0": {'gateway': '10.0.1.254', 'interface': '10.0.1.254'},
+                        "192.168.0.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.254'},
+                        "192.168.1.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.254'},
+                        "10.0.0.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.254'}
                     }
                 }
             },
@@ -276,28 +180,28 @@ class MyTestCase(unittest.TestCase):
                         0: {
                             'id': 0,
                             'name': 'A',
-                            'connected_routers': [{'uid': 1, 'ip': '10.0.0.45'}],
+                            'connected_routers': {1: '10.0.0.45'},
                             'range': {'start': '10.0.0.0', 'end': '10.0.0.255'},
                             'mask': 24
                         },
                         1: {
                             'id': 1,
                             'name': 'B',
-                            'connected_routers': [{'uid': 0, 'ip': '192.168.0.26'}, {'uid': 1, 'ip': '192.168.0.253'}],
+                            'connected_routers': {0: '192.168.0.26', 1: '192.168.0.253'},
                             'range': {'start': '192.168.0.0', 'end': '192.168.0.255'},
                             'mask': 24
                         },
                         2: {
                             'id': 2,
                             'name': 'C',
-                            'connected_routers': [{'uid': 0, 'ip': '192.168.1.250'}, {'uid': 2, 'ip': '192.168.1.253'}],
+                            'connected_routers': {0: '192.168.1.250', 2: '192.168.1.253'},
                             'range': {'start': '192.168.1.0', 'end': '192.168.1.255'},
                             'mask': 24
                         },
                         3: {
                             'id': 3,
                             'name': 'D',
-                            'connected_routers': [{'uid': 3, 'ip': '10.0.1.254'}, {'uid': 2, 'ip': '10.0.1.253'}],
+                            'connected_routers': {3: '10.0.1.254', 2: '10.0.1.253'},
                             'range': {'start': '10.0.1.0', 'end': '10.0.1.255'},
                             'mask': 24
                         }
@@ -306,25 +210,25 @@ class MyTestCase(unittest.TestCase):
                         0: {
                             'id': 0,
                             'name': '1',
-                            'connected_subnets': [{'uid': 1, 'ip': '192.168.0.26'}, {'uid': 2, 'ip': '192.168.1.250'}],
+                            'connected_subnets': {1: '192.168.0.26', 2: '192.168.1.250'},
                             'internet': False
                         },
                         1: {
                             'id': 1,
                             'name': '2',
-                            'connected_subnets': [{'uid': 0, 'ip': '10.0.0.45'}, {'uid': 1, 'ip': '192.168.0.253'}],
+                            'connected_subnets': {0: '10.0.0.45', 1: '192.168.0.253'},
                             'internet': False
                         },
                         2: {
                             'id': 2,
                             'name': '3',
-                            'connected_subnets': [{'uid': 2, 'ip': '192.168.1.253'}, {'uid': 3, 'ip': '10.0.1.253'}],
+                            'connected_subnets': {2: '192.168.1.253', 3: '10.0.1.253'},
                             'internet': False
                         },
                         3: {
                             'id': 3,
                             'name': '4',
-                            'connected_subnets': [{'uid': 3, 'ip': '10.0.1.254'}],
+                            'connected_subnets': {3: '10.0.1.254'},
                             'internet': True
                         }
                     }
@@ -346,45 +250,46 @@ class MyTestCase(unittest.TestCase):
                 },
                 'expected_result': {
                     1: {
-                        "192.168.0.0/24": "192.168.0.26",
-                        "192.168.1.0/24": "192.168.1.250",
-                        "10.0.0.0/24": "192.168.0.253",
-                        "10.0.1.0/24": "192.168.1.253",
-                        "0.0.0.0/0": "192.168.1.253"
+                        "192.168.0.0/24": {'gateway': '192.168.0.26', 'interface': '192.168.0.26'},
+                        "192.168.1.0/24": {'gateway': '192.168.1.250', 'interface': '192.168.1.250'},
+                        "10.0.0.0/24": {'gateway': '192.168.0.253', 'interface': '192.168.0.26'},
+                        "10.0.1.0/24": {'gateway': '192.168.1.253', 'interface': '192.168.1.250'},
+                        "0.0.0.0/0": {'gateway': '192.168.1.253', 'interface': '192.168.1.250'}
                     },
                     2: {
-                        "192.168.0.0/24": "192.168.0.253",
-                        "10.0.0.0/24": "10.0.0.45",
-                        "0.0.0.0/0": "192.168.0.26",
-                        "192.168.1.0/24": "192.168.0.26",
-                        "10.0.1.0/24": "192.168.0.26"
+                        "192.168.0.0/24": {'gateway': '192.168.0.253', 'interface': '192.168.0.253'},
+                        "10.0.0.0/24": {'gateway': '10.0.0.45', 'interface': '10.0.0.45'},
+                        "0.0.0.0/0": {'gateway': '192.168.0.26', 'interface': '192.168.0.253'},
+                        "192.168.1.0/24": {'gateway': '192.168.0.26', 'interface': '192.168.0.253'},
+                        "10.0.1.0/24": {'gateway': '192.168.0.26', 'interface': '192.168.0.253'}
                     },
                     3: {
-                        "192.168.1.0/24": "192.168.1.253",
-                        "10.0.1.0/24": "10.0.1.253",
-                        "0.0.0.0/0": "10.0.1.254",
-                        "192.168.0.0/24": "192.168.1.250",
-                        "10.0.0.0/24": "192.168.1.250"
+                        "192.168.1.0/24": {'gateway': '192.168.1.253', 'interface': '192.168.1.253'},
+                        "10.0.1.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.253'},
+                        "0.0.0.0/0": {'gateway': '10.0.1.254', 'interface': '10.0.1.253'},
+                        "192.168.0.0/24": {'gateway': '192.168.1.250', 'interface': '192.168.1.253'},
+                        "10.0.0.0/24": {'gateway': '192.168.1.250', 'interface': '192.168.1.253'}
                     },
                     4: {
-                        "10.0.1.0/24": "10.0.1.254",
-                        "0.0.0.0/0": "10.0.1.254",
-                        "192.168.0.0/24": "10.0.1.253",
-                        "192.168.1.0/24": "10.0.1.253",
-                        "10.0.0.0/24": "10.0.1.253"
+                        "10.0.1.0/24": {'gateway': '10.0.1.254', 'interface': '10.0.1.254'},
+                        "0.0.0.0/0": {'gateway': '10.0.1.254', 'interface': '10.0.1.254'},
+                        "192.168.0.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.254'},
+                        "192.168.1.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.254'},
+                        "10.0.0.0/24": {'gateway': '10.0.1.253', 'interface': '10.0.1.254'}
                     }
                 }
             }
         }
-        
+
         for nid in self.networks:
             net = self.networks[nid]
-            inst = Commander()
-            inst.build_virtual_network(net['subnets'], net['routers'], net['links'])
+            inst = Dispatcher()
+            inst.execute(net['subnets'], net['routers'], net['links'])
             self.networks[nid]['instance'] = inst
 
     def test_1_network_check(self):
-        print(f"Configuration [network]")
+        if self.debug_print:
+            print(f"Configuration [network]")
 
         for number in self.networks:
             n = self.networks[number]
@@ -394,16 +299,18 @@ class MyTestCase(unittest.TestCase):
 
             # testing hops
             self.assertEqual(n['expected_network'], result, f'{n["name"]} : Network')
-            print(f'Passed : {n["name"]}')
+            if self.debug_print:
+                print(f'Passed : {n["name"]}')
 
     def test_2_hops(self):
-        print(f"\n\nConfiguration [hops]")
+        if self.debug_print:
+            print(f"\n\nConfiguration [hops]")
 
         for number in self.networks:
             n = self.networks[number]
             inst = n['instance']
 
-            hops = inst.discover_hops()
+            hops = inst.hops
 
             # testing hops
             for matrix in n['expected_hops']:
@@ -412,10 +319,12 @@ class MyTestCase(unittest.TestCase):
 
                 self.assertEqual(expected, res, f'{n["name"]} : Ants : tuple {matrix}')
 
-            print(f"Passed : {n['name']}")
+            if self.debug_print:
+                print(f"Passed : {n['name']}")
 
-    def test_3_by_raw_insertion(self):
-        print(f"\n\nConfiguration [table]")
+    def test_3_routing_tables(self):
+        if self.debug_print:
+            print(f"\n\nConfiguration [table]")
 
         for number in self.networks:
 
@@ -423,7 +332,7 @@ class MyTestCase(unittest.TestCase):
             inst = n['instance']
 
             # grab the result
-            result = inst.calculate_routing_tables(raw=True)
+            result = inst.formatted_raw_routing_tables
 
             for router in n['expected_result']:
                 res = result[str(router)]
@@ -431,7 +340,8 @@ class MyTestCase(unittest.TestCase):
 
                 self.assertEqual(expected, res, f'{n["name"]} : Table : router {router}')
 
-            print(f'Passed {n["name"]}')
+            if self.debug_print:
+                print(f'Passed {n["name"]}')
 
 
 if __name__ == '__main__':
