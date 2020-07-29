@@ -1,5 +1,5 @@
 import unittest
-from rtg.core.errors import *
+from rth.core.errors import *
 
 
 class NetworkCreatorTests(unittest.TestCase):

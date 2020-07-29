@@ -3,7 +3,7 @@ from nettools.utils.ip_class import FourBytesLiteral
 from nettools.utils.utils import Utils
 from nettools.utils.errors import IPOffNetworkRangeException
 
-from rtg.core.errors import *
+from rth.core.errors import *
 
 
 class NetworkCreator:
@@ -290,7 +290,7 @@ class NetworkCreator:
             :raise:
                 NetworkUtilities.core.errors.IPOffNetworkRangeException
                 or
-                rtg.core.errors.IPAlreadyAttributed
+                rth.core.errors.IPAlreadyAttributed
             """
 
             # Checking that ip is effectively in range of the subnet

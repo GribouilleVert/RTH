@@ -1,6 +1,6 @@
-from rtg.virtual_building.network_creator import NetworkCreator
-from rtg.virtual_building.ants import AntsDiscovery
-from rtg.virtual_building.routing_tables_generator import RoutingTablesGenerator
+from rth.virtual_building.network_creator import NetworkCreator
+from rth.virtual_building.ants import AntsDiscovery
+from rth.virtual_building.routing_tables_generator import RoutingTablesGenerator
 from .errors import WronglyFormedSubnetworksData, WronglyFormedRoutersData, WronglyFormedLinksData
 from nettools.utils.ip_class import FourBytesLiteral
 

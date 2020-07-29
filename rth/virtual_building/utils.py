@@ -1,4 +1,4 @@
-from rtg.core.errors import MasterRouterError
+from rth.core.errors import MasterRouterError
 
 def get_master_router(routers):
     """

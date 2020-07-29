@@ -1,6 +1,6 @@
 import unittest
-from rtg.core.dispatcher import Dispatcher
-from rtg.core.errors import UnreachableNetwork, MasterRouterError
+from rth.core.dispatcher import Dispatcher
+from rth.core.errors import UnreachableNetwork, MasterRouterError
 import unittest.mock as m
 
 

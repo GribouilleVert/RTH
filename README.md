@@ -1,4 +1,4 @@
-# Routing Tables Generator
+# Routing Tables Helper
 
 A program made by a lover of new technologies, for all networking developers, sysadmins and other people that might find any
 use to it.
@@ -20,7 +20,7 @@ You can also find me on these two french Discord servers:
 
 ## What is it?
 
-The Routing Tables Generator, or RTG, is a program that aims to provide an easy, and quick, way to create routing
+The Routing Tables Helper, or RTH, is a program that aims to provide an easy, and quick, way to create routing
 tables. Instead of having to create them by hand, using a Virtual Machine or your own network, and a piece of paper,
 this virtual network builder and routing tables generator does it all for you.
 
@@ -28,7 +28,7 @@ this virtual network builder and routing tables generator does it all for you.
 
 ## Classes
 
-The main class you'll want to use is the Dispatcher class. You can import it from `rtg.core.dispatcher`
+The main class you'll want to use is the Dispatcher class. You can import it from `rth.core.dispatcher`
 
 The other classes, that each do one part of the work, are the `NetworkCreator`, `Ants` and `RoutingTablesGenerator` classes.
 Normally, you won't use them on their own, unless you are willing to do a special action.
@@ -45,7 +45,7 @@ This is the easiest and fastest part to read and understand.
 You just need to import the Dispatcher, create an instance, `execute()` it the right way and it's all done!
 
 ```ignorelang
-from rtg.core.dispatcher import Dispatcher
+from rth.core.dispatcher import Dispatcher
 
 inst = Dispatcher()
 inst.execute(subnetworks, routers, links)
@@ -129,7 +129,7 @@ links = {
 ### Now to combine it all into an example
 
 ```python
-from rtg.core.dispatcher import Dispatcher
+from rth.core.dispatcher import Dispatcher
 
 subnetworks = {
     'A': "10.0.1.0/24",

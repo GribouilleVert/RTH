@@ -1,6 +1,6 @@
 from enum import Enum
-from rtg.core.errors import UnreachableNetwork
-from rtg.virtual_building.utils import *
+from rth.core.errors import UnreachableNetwork
+from rth.virtual_building.utils import *
 
 
 class AntState(Enum):

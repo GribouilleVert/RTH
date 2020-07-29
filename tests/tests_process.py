@@ -1,5 +1,5 @@
 import unittest
-from rtg.core.dispatcher import Dispatcher
+from rth.core.dispatcher import Dispatcher
 
 
 class ProcessTests(unittest.TestCase):

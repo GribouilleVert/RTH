@@ -1,6 +1,6 @@
 import unittest
-from rtg.virtual_building.network_creator import NetworkCreator
-from rtg.core.errors import NameAlreadyExists, OverlappingError
+from rth.virtual_building.network_creator import NetworkCreator
+from rth.core.errors import NameAlreadyExists, OverlappingError
 from nettools.utils.ip_class import FourBytesLiteral
 from nettools.utils.utils import Utils
 
