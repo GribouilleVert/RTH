@@ -1,112 +1,99 @@
 # Routing Tables Helper
 
-A program made by a lover of new technologies, for all networking developers, sysadmins and other people that might find any
-use to it.
-It aims to ease the creation and calculus of routing tables when working on networks.
+Un programme réalisé par un amoureux des nouvelles technologies, pour tous les développeurs réseaux, administrateurs systèmes et autres personnes qui pourrait y trouver une utilitée.
+Son objectif est de faciliter la création et le calcul de table de routages lors de travaux sur des réseaux.
 
-## Is it finished yet?
+## Est-ce fini ?
 
-No, the program is only in its first stable release. I'm always hoping to create and innovate more; maybe it won't be
-updated for a moment, but it doesn't mean I let it down either.
+Non, le programme n'en n'est encore qu'a sa première version stable. J'ai toujours espoir de pouvoir améliorer, créer et inover. Le programme ne sera peut être pas mis à jour pour un bon moment, mais cela ne veut pas pour autant dire que je laisse tomber.
 
-### Contact info
-By mail: biothewolff [at] gmx [dot] fr\
-On Discord: BioTheWolff#7708\
-You can also find me on these two french Discord servers:
+### Informations de contact
+Par email: biothewolff [arobase] gmx [point] fr\
+Via discord: BioTheWolff#7708\
+Vous pouvez aussi me retrouver sur ces deux serveurs (français):
 - [Developpeur(euse)s FR](https://discord.gg/8d4ACG5)
 - [l4p1n-srv](https://discord.gg/awbUQe4)
 
-## What is it?
+## Mais qu'est-ce que donc que ce programme ?
 
-The Routing Tables Helper, or RTH, is a program that aims to provide an easy, and quick, way to create routing
-tables. Instead of having to create them by hand, using a Virtual Machine (VM) or your own network, and a piece of paper,
-this virtual network builder and routing tables generator does it all for you.
+Routing Table Helper ou RTH est un programme qui vous aide créer des tables de routages rapidement et facilement. A la place de les créer à la main, d'utiliser une machine virtuelle (VM), votre propre réseau ou encore un papier et un crayon, cet outil le fait pour vous.
 
-The RTH is based on, and uses, another of my programs, [nettools](https://github.com/BioTheWolff/NetTools), a tool for fast networks
-and IPs handling and calculus.
+
+RTH est basé et utiliser un autre de mes programmes: [nettools](https://github.com/BioTheWolff/NetTools), un outil pour géréer et calculer des IPs et réseaux rapidement.
 
 # Documentation
 
 ## Classes
 
-The main class you'll want to use is the Dispatcher class. You can import it from `rth.core.dispatcher`
+La classe principale à utiliser est la classe `Discpatcher`. Vous pouvez l'importer depuis `rth.code.dispatcher`.
 
-The other classes, that each do one part of the work, are the `NetworkCreator`, `Ants` and `RoutingTablesGenerator` classes.
-Normally, you won't use them on their own, unless you are willing to do a special action.
+Les autres classes, qui font chacunes une part du travail, sont `NetworkCreator`, `Ants` et `RoutingTablesGenerator`.
+Normalement, vous ne devriez pas avoir à vous en servir à moins que vous ayez des besoins spécifiques.
 
-## How to use the software
+## Comment utiliser le programme ?
 
-The biggest problem here is how to format the data the right way. 
-To generate the routing tables, we will need three things: the subnetworks, the routers and the links. As the computer is no
-sentient machine, it needs the links to virtually reconstruct the network and find paths in all this mess of figures and names.
+Le gros du travail consiste à formatter vos données correctements.
+Pour générer les tables de routage vous arez besoin de trois choses: les sous-réseaux, les routeurs et les liens. Etant donné que l'rdinateur n'est pas encore conscient (skynet arrive !); Vous devez lui fournir ces données pour qu'il puisse virtuellement reconstruire le réseau et qu'il puisse trouver son chemin dans ce bordel de noms et de chiffres.
 
-### General flow and usage of the program
+### Fonctionnement et utilisation générale du programme
 
-This is the easiest and fastest part to read and understand.
-You just need to import the Dispatcher, create an instance, `execute()` it the right way and it's all done!
+Voici la manière la plus simple et rapide à lire et comprendre.
+Vous avez juste besoin d'importer la classe `Dispatcher` puis il n'y à plus qu'a appeller la méthode `execute()` sur votre instance !
 
 ```ignorelang
 from rth.core.dispatcher import Dispatcher
 
 inst = Dispatcher()
 inst.execute(subnetworks, routers, links)
-# And it's all done !
+# Et c'est fait !
 
-# You can then display the output in the console
+# Vous pouvez maintenant afficher le résultat dans la console
 inst.display_routing_tables()
 
-# or output it to a file (txt will be the best format for now)
+# Ou l'écrire dans un fichier (nous vous recommandons d'utiliser un .txt pour le moment)
 inst.output_routing_tables("D:/Projects/output.txt")
 ```
 
-### Subnetworks data
+### Représentation des sous-réseaux
 
-The subnetworks data is a dictionary you must provide under this format: `{NAME: CIDR, ...}` meaning putting the names of 
-the subnetworks as keys, and their respectives CIDRs in values.
+Les sous-réseaux sont représenté par un dictionnaire. Il doit avoir en clés le nom du réseau en en valeur son [CIDR _[EN]_](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing) (`{NAME: CIDR, ...}`).
 
-Example: 
+Exemple: 
 ```python
-subnetworks = {
+sous_reseaux = {
     'A': "10.0.1.0/24",
     'B': "10.0.2.0/24",
     'C': "10.0.3.0/24"
 }
 ```
 
-NB: if you wish to not give any name to a subnetwork, leave the key as an empty string (`''`) and it will automatically be 
-named `<Untitled Network#ID:{ID HERE}>` (with `{ID HERE}` being the unique ID of the network)
+Note: si vous n'avez ou ne souhaitez donner de nom à un sous réseau, laissez la clé vide (`''`); un nom unique sera automatiquement fournis à votre sous-réseau en suivant la nomenclature suivante: `<Untitled Network#ID:{ID ICI}>` (`{ID ICI}` étant remplacé par l'identifiant unique du réseau).
 
-### Routers data
+### Configuration des routers
 
-The routers data is also a dictionary, which resembles the subnetworks data. The only difference is the value you must give;
-the format is `{NAME: HAS_INTERNET_CONNECTION, ...}`. The `HAS_INTERNET_CONNECTION` value **must be either True or None**.
-`True` means the router is connected to internet, and `None` means it doesn't.
+La configuration des routeurs est aussi un dictionnaire, il prends en clés les noms des routeurs et en valeur si le routeur est connecté à internet (`True` si oui, `None` sinon) (`{NAME: HAS_INTERNET_CONNECTION, ...}`)
 
-Example:
+Exemple:
 ```python
 routers = {
-    0: True,
+    0: True, //Ce routeur est conncté à internet
     1: None,
     2: None,
     3: None
 }
 ``` 
 
-**WARNING:** In this current version, only **ONE** router should have the internet connection. It will throw an exception if
-more or less than one are set with an internet connection.
+**ATTENTION:** Actuellement, seul **UN** routeur doit être connecté à internet. Si aucun ou plus d'un routeur sont connectés à internet, le programme renverra une exception.
 
-The router with the internet connection will be called "master router" below.
+Le router avec une connexion internet sera apellé "routeur maitre" ci-après.
 
-### Links data
+### Configuration des Liens
 
-The links data is the most important, and also the trickiest to format. The format is
-`{ROUTER_NAME: {SUBNETWORK_NAME: IP, ...}, ...}`. So, to explain it more literally, you must make a dictionary of the 
-connected subnetworks, and the IP at which the router is connected onto the subnetwork, for each router.
+La configuration des liens est la plus importante mais aussi la plus complexe. Le format est le suivant: `{NOM_ROUTEUR: {NOM_SOUSRESEAU: IP, ...}, ...}`. Hum, assez compliqué, voici quelques explications suplémentaires: vous devez faire un dictionnaire listant les sous-réseaux connectés à chaque routeur, pour caque routeur.
 
-The `IP` value can be either an IPv4, or `None`. If `None` is given, the program will automatically assign an IP for the router,
-which will be the first available address starting from the END of the subnetwork range.
+La valeur `IP` peut soit être une IPv4 ou `None`, si vous mettez `None`, le programme assignera automatiquement une IP, celle-ci cera la première adresse IP disponible en partant de la fin des possibles pour le sous-réseau.
 
-Example:
+Exemple:
 ```python
 links = {
     0: {
@@ -127,7 +114,7 @@ links = {
 }
 ```
 
-### Now to combine it all into an example
+### Et maintenant tous en coeur !
 
 ```python
 from rth.core.dispatcher import Dispatcher
@@ -167,16 +154,15 @@ inst = Dispatcher()
 inst.execute(subnetworks, routers, links)
 ```
 
-## Hidden choices, and output formatting
+## Options cachée et formattage de sortie
 
-### Hidden choices and impact on paths
+### Les options cachée et leurs impacts sur les routes
 
-This title may be a bit weird, but it will become clear in a second. The program, when it encounters several possible ways
-to get from a subnetwork to another, will have to make a choice. Therefore, the path followed by the program, which will be 
-of course visible on the routing tables at the end might disturb you. So, in order to clear doubts and help the users find the
-path faster, I included a "hops" section in the output.
+Ce titre peut paraître un peut bizzarre, mais pas d'inquétude, nous allons vous expliquer.
+Le programme, quand il rencontre plusieurs options pour allert d'un sous-réseau à un autre devra faire un choix. De ce fait le chemin suivi par le programme, qui sera biensûr visible sur les tables de routage au final pourra vous étonner.
+Donc, afin de vous éviter tout doutes et de vous aider à trouver un chemin plus rapidement, nous avons ajoutés une sections "sauts" dans la sortie
 
-It looks like this:
+Elle ressemble à ceci
 ```ignorelang
 ----- HOPS -----
 From subnetwork A to subnetwork B: router 2
@@ -185,16 +171,16 @@ From subnetwork A to subnetwork D: router 2 > router 1 > router 3
 From subnetwork B to subnetwork A: router 2
 
 ...
-(I only show a small amount here, even though in reality there are more lines)
+(Seul un extrait est visible ici)
 ```
 
-It will help you see which path has been taken.
+Cela pourra vous aider à visualiser quels chemins ont étés pris
 
-### Output formatting
+### Formmatage de la sortie
 
-The output of the routing tables is not a table, as you might expect. For now, at least.
-It currently looks like this:
+La sortie des tables de routages n'est pas un tableau tel que vous pourriez vous y attendre. Pour le moment, tout du moins.
 
+La sortie ressemble actuellement à ceci
 ```ignorelang
 ----- ROUTING TABLES -----
 Router MyRouter
@@ -205,5 +191,6 @@ Router MyRouter
   - 10.0.1.0/24         : 192.168.1.253 via 192.168.1.254
 ```
 
-As you may have guessed, it is formatted as `DESTINATION NETWORK : GATEWAY via INTERFACE`. The master router route
-(so the way out of the local network) is always `0.0.0.0/0` in the output.
+Comme vous avez pu le deviner, le format est le suivant:  
+`REASEAU DE DESTIONATION: PASSERELLE via INTERFACE`  
+La route principale (donc la sortie du réseau local) est toujours `0.0.0.0/0` dans la sortie.
